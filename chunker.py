@@ -4,10 +4,10 @@ from numpy import arange
 
 class Chunker:
     def __init__(self, model="en_core_web_sm"):
-        self.nlp = spacy.load(model)
+        self._nlp = spacy.load(model)
 
     def chunk(self, sent: str):
-        doc = self.nlp(sent)
+        doc = self._nlp(sent)
 
         phrase_indices = []
         pps = []
@@ -45,15 +45,15 @@ class Chunker:
                 ops.append(doc[token.i:token.i + 1])
                 phrase_indices.append(token.i)
 
-        print('doc:', doc)
-        print('pps:', pps)
-        print('nps:', nps)
-        print('vps:', vps)
-        print('ops:', ops)
-        print(phrase_indices)
+        # print('doc:', doc)
+        # print('pps:', pps)
+        # print('nps:', nps)
+        # print('vps:', vps)
+        # print('ops:', ops)
+        # print(phrase_indices)
 
         phrases = pps + nps + vps + ops
         phrases.sort(key=lambda p: p.start)
-        print('phrases:', phrases)
+        # print('phrases:', phrases)
 
         return phrases

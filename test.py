@@ -1,35 +1,52 @@
 import spacy
-import torch
-from transformers import AutoTokenizer, PreTrainedTokenizer, AutoModel
+from datasets import load_dataset
+from tqdm import tqdm
+from transformers import AutoTokenizer, PreTrainedTokenizer
 
-from chunkers import Chunker
+from chunker import Chunker
+from data_process import Preprocessor
 
-chunker = Chunker()
-ex = "Some dogs are running on a deserted beach."
-print(ex)
+# chunker & tokenizer test
 
-# doc = chunker.nlp(ex)
-# for token in doc:
-#     print(token.text, token.tag_)
-
-phrases = chunker.chunk(ex)
-phrases_text = [phrase.text for phrase in phrases]
-c_offsets = [(phrase.start_char, phrase.end_char) for phrase in phrases]
-
-nlp = spacy.load("en_core_web_sm")
-doc = nlp(ex)
-
-# model = SentenceTransformer('all-MiniLM-L6-v2')
-# embed = model.encode(ex, output_value='token_embeddings')
-# print(embed)
-
-# tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-mpnet-base-v2")
-# encoded_input = tokenizer(phrases_text, padding=True, truncation=True, max_length=256, return_tensors='pt')
+# chunker = Chunker()
+# ex = "During the intense workout in the gym, the tall muscular constructor John not only lifted weights but also showed off, though he hadn't tried it before."
+# print(ex)
 #
-# encoder = AutoModel.from_pretrained("sentence-transformers/all-mpnet-base-v2")
-# encoder2 = SentenceTransformer('all-mpnet-base-v2')
+# # doc = chunker._nlp(ex)
+# # for token in doc:
+# #     print(token.text, token.tag_)
 #
-# with torch.no_grad():
-#     model_output = encoder(**encoded_input)
+# phrases = chunker.chunk(ex)
+# phrases_text = [phrase.text for phrase in phrases]
+# c_offsets = [(phrase.start_char, phrase.end_char) for phrase in phrases]
 #
-# embeddings = encoder2.encode(phrases_text)
+# nlp = spacy.load("en_core_web_sm")
+# doc = nlp(ex)
+#
+# tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-mpnet-base-v2')
+#
+# encoded_phrases = tokenizer(phrases_text, padding=True, truncation=True, max_length=256)
+# encoded_sent = tokenizer(ex, padding=True, truncation=True, max_length=256, return_offsets_mapping=True)
+
+# preprocessor test
+
+# ds_snli = load_dataset("snli")
+#
+# ex_snli = ds_snli['test'][1024]
+# print(ex_snli)
+#
+# preprocessor = Preprocessor()
+# encoded_ex = preprocessor.encode(ex_snli)
+#
+# for key in encoded_ex.keys():
+#     print(key + ': ' + str(encoded_ex[key]))
+
+ds_snli = load_dataset("snli")
+preprocessor = Preprocessor()
+# for split_name in ds_snli:
+#     split = ds_snli[split_name]
+
+ds_test = ds_snli['test']
+ds_test_processed = []
+for ex in tqdm(ds_test):
+    ds_test_processed.append(preprocessor.encode(ex))
