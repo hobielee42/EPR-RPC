@@ -1,7 +1,6 @@
 import spacy
 import torch
 from transformers import AutoTokenizer, PreTrainedTokenizer, AutoModel
-from sentence_transformers import SentenceTransformer
 
 from chunkers import Chunker
 
