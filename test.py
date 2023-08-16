@@ -49,4 +49,4 @@ preprocessor = Preprocessor()
 ds_test = ds_snli['test']
 ds_test_processed = []
 for ex in tqdm(ds_test):
-    ds_test_processed.append(preprocessor.encode(ex))
+    ds_test_processed.append(preprocessor.process(ex))

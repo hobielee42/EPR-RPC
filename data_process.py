@@ -1,12 +1,22 @@
-from typing import Dict, Any, List
+import argparse
+import pickle
 
 import numpy as np
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from numpy import ndarray
 from spacy.tokens.span import Span
+from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer, BatchEncoding
-
 from chunker import Chunker
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ds', action='store')
+    parser.add_argument('--train', action='store_true', default=False)
+    parser.add_argument('--val', action='store_true', default=False)
+    parser.add_argument('--test', action='store_true', default=False)
+    return parser.parse_args()
 
 
 def get_phrase_masks(phrases: list[Span], sent_tokens: BatchEncoding):
@@ -28,7 +38,7 @@ class Preprocessor:
         self.chunker = Chunker(chunker_model_name)
         self.tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(pretrained_tokenizer_name_or_path)
 
-    def encode(self, ex):
+    def process(self, ex):
         premise = ex['premise']
         hypothesis = ex['hypothesis']
 
@@ -54,6 +64,33 @@ class Preprocessor:
                 'h_phrase_tokens': h_phrase_tokens, 'p_sent_tokens': p_sent_tokens, 'h_sent_tokens': h_sent_tokens,
                 'p_masks'        : p_masks, 'h_masks': h_masks, 'label': ex['label']}
 
+    def process_dataset(self, dataset: Dataset):
+        dataloader = []
+        for ex in tqdm(dataset):
+            dataloader.append(self.process(ex))
+        print(
+                f'{len(dataloader)} out of the total {len(dataset)} {"is" if len(dataloader) <= 1 else "are"} preprocessed.')
+
+        return dataloader
+
 
 if __name__ == '__main__':
-    ds_snli = load_dataset("snli")
+    args = get_args()
+    preprocessor = Preprocessor()
+
+    if args.ds == 'snli':
+        dataset = load_dataset('snli')
+        splits = {'train': 'train', 'val': 'validation', 'test': 'test'}
+    elif args.ds == 'mnli':
+        dataset = load_dataset('multi_nli')
+        splits = {'train': 'train', 'val': 'validation_mismatched', 'test': 'validation_matched'}
+    else:
+        raise ValueError('Please enter either "--ds snli" or "--ds mnli".')
+
+    splits = ['train' if args.train else None, 'val' if args.val else None, 'test' if args.test else None]
+
+    for split in splits:
+        if split is not None:
+            split_preprocessed = preprocessor.process_dataset(dataset[split])
+            with open(f'./cache/encodings/{args.ds}/tokens/{split}_tokens.pkl', 'wb') as f:
+                pickle.dump(split_preprocessed, f)
