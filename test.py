@@ -43,10 +43,20 @@ from data_process import Preprocessor
 
 ds_snli = load_dataset("snli")
 preprocessor = Preprocessor()
-# for split_name in ds_snli:
-#     split = ds_snli[split_name]
+# # for split_name in ds_snli:
+# #     split = ds_snli[split_name]
 
-ds_test = ds_snli['test']
-ds_test_processed = []
-for ex in tqdm(ds_test):
-    ds_test_processed.append(preprocessor.process(ex))
+# ds_test = ds_snli['test']
+# ds_test_processed = []
+# for ex in tqdm(ds_test):
+#     ds_test_processed.append(preprocessor.process(ex))
+
+# dataset test
+
+# ex = ds_snli["train"][122238]
+# ex = {"premise": "sample sample samp", "hypothesis": "hi", "label": 0}
+# _ = preprocessor.process(ex)
+# chunker = Chunker()
+# _ = chunker.chunk("fo")
+
+dataset=load_dataset()

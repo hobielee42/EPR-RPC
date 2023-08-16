@@ -12,7 +12,10 @@ from chunker import Chunker
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ds", action="store")
+    parser.add_argument("ds", action="store")
+    parser.add_argument(
+        "variation", action="store", default="hg", choices=["hg", "loc"]
+    )
     parser.add_argument("--train", action="store_true", default=False)
     parser.add_argument("--val", action="store_true", default=False)
     parser.add_argument("--test", action="store_true", default=False)
@@ -54,22 +57,34 @@ class Preprocessor:
 
         p_phrases_text = [_.text for _ in p_phrases]
         h_phrases_text = [_.text for _ in h_phrases]
-        p_phrase_tokens = self.tokenizer(
-            p_phrases_text, padding=True, truncation=True, max_length=256
+        p_phrase_tokens = (
+            self.tokenizer(
+                p_phrases_text, padding=True, truncation=True, max_length=256
+            )
+            if p_phrases_text
+            else None
         )
-        h_phrase_tokens = self.tokenizer(
-            h_phrases_text, padding=True, truncation=True, max_length=256
+        h_phrase_tokens = (
+            self.tokenizer(
+                h_phrases_text, padding=True, truncation=True, max_length=256
+            )
+            if h_phrases_text
+            else None
         )
 
-        p_sent_tokens = self.tokenizer(
-            premise, padding=True, truncation=True, max_length=256
+        p_sent_tokens = (
+            self.tokenizer(premise, padding=True, truncation=True, max_length=256)
+            if premise
+            else None
         )
-        h_sent_tokens = self.tokenizer(
-            hypothesis, padding=True, truncation=True, max_length=256
+        h_sent_tokens = (
+            self.tokenizer(hypothesis, padding=True, truncation=True, max_length=256)
+            if hypothesis
+            else None
         )
 
-        p_masks = get_phrase_masks(p_phrases, p_sent_tokens)
-        h_masks = get_phrase_masks(h_phrases, h_sent_tokens)
+        p_masks = get_phrase_masks(p_phrases, p_sent_tokens) if p_phrases else None
+        h_masks = get_phrase_masks(h_phrases, h_sent_tokens) if h_phrases else None
 
         # output['p_phrase_idx'] = [(_.start, _.end) for _ in p_phrases]
         # output['h_phrase_idx'] = [(_.start, _.end) for _ in h_phrases]
@@ -129,7 +144,7 @@ if __name__ == "__main__":
                 dataset[split_names[split]]
             )
             with open(
-                f"./cache/encodings/{args.ds}/tokens/{split}_tokens.pkl", "wb"
+                f"./data/encodings/{args.ds}/tokens/{split}_tokens.pkl", "wb+"
             ) as f:
                 print(f"Saving preprocessed dataset {args.ds}/{split}...")
                 pickle.dump(split_preprocessed, f)
