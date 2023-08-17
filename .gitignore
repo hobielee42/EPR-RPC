@@ -2,7 +2,7 @@
 cache/**
 nohup.out
 *.sh
-/data/datasets
+/data
 **.out
 **.pkl
 
