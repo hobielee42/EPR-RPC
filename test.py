@@ -1,5 +1,5 @@
 import spacy
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
@@ -23,7 +23,9 @@ from data_process import Preprocessor
 # nlp = spacy.load("en_core_web_sm")
 # doc = nlp(ex)
 #
-# tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-mpnet-base-v2')
+tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
+    "sentence-transformers/all-mpnet-base-v2"
+)
 #
 # encoded_phrases = tokenizer(phrases_text, padding=True, truncation=True, max_length=256)
 # encoded_sent = tokenizer(ex, padding=True, truncation=True, max_length=256, return_offsets_mapping=True)
@@ -41,7 +43,6 @@ from data_process import Preprocessor
 # for key in encoded_ex.keys():
 #     print(key + ': ' + str(encoded_ex[key]))
 
-ds_snli = load_dataset("snli")
 preprocessor = Preprocessor()
 # # for split_name in ds_snli:
 # #     split = ds_snli[split_name]
@@ -56,7 +57,17 @@ preprocessor = Preprocessor()
 # ex = ds_snli["train"][122238]
 # ex = {"premise": "sample sample samp", "hypothesis": "hi", "label": 0}
 # _ = preprocessor.process(ex)
-# chunker = Chunker()
+chunker = Chunker()
 # _ = chunker.chunk("fo")
 
-dataset=load_dataset()
+mnli = Dataset.from_json("data/datasets/multinli_1.0/multinli_1.0_train.jsonl")
+mnli = mnli.rename_columns(
+    {
+        "sentence1": "premise",
+        "sentence2": "hypothesis",
+        "gold_label": "label",
+    }
+)
+
+ex = mnli[21853]
+output = preprocessor.process(ex)

@@ -28,8 +28,17 @@ def get_phrase_masks(phrases: list[Span], sent_tokens: BatchEncoding):
             start_char
         ), sent_tokens.char_to_token(end_char - 1)
 
+        if start_token is None or end_token is None:
+            return masks
+
         mask = np.zeros(len(sent_tokens[0]))
-        mask[start_token : end_token + 1] = 1
+        #
+        # print(f"Phrase: {phrase}")
+        # print(
+        #     f"phrase.start_char: {phrase.start_char}; phrase.end_char: {phrase.end_char}"
+        # )
+        # print(f"start_token: {start_token}; end_token: {end_token}")
+        #
         masks.append(mask)
 
     return masks
@@ -147,7 +156,7 @@ if __name__ == "__main__":
     else:
         for split in splits:
             dataset = Dataset.from_json(ds_config[ds_opt]["path"][split])
-            dataset=dataset.rename_columns(
+            dataset = dataset.rename_columns(
                 {
                     "sentence1": "premise",
                     "sentence2": "hypothesis",
