@@ -12,7 +12,7 @@ from chunker import Chunker
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("ds", action="store")
+    parser.add_argument("dataset", action="store")
     parser.add_argument(
         "variation", action="store", default="hg", choices=["hg", "loc"]
     )
@@ -105,49 +105,65 @@ class Preprocessor:
 
     def process_dataset(self, dataset: Dataset):
         dataloader = []
-        for ex in tqdm(dataset, desc=f"Preprocessing {len(dataset)} examples..."):
+        print(f"Preprocessing {len(dataset)} examples...")
+        pbar = tqdm(dataset)
+        for i, ex in enumerate(pbar):
             dataloader.append(self.process(ex))
+            pbar.set_description(f"Preprocessing sample #{i}")
         print(
-            f'{len(dataloader)} out of the total {len(dataset)} {"is" if len(dataloader) <= 1 else "are"} preprocessed.'
+            f'{len(dataloader)} out of the total {len(dataset)} {"is" if len(dataloader) in [0,1] else "are"} preprocessed.'
         )
 
         return dataloader
 
 
+ds_config = {
+    "snli": {
+        "hg_path": "snli",
+        "hg_splits": {"train": "train", "val": "validation", "test": "test"},
+        "loc_path": {
+            "train": "data/datasets/snli_1.0/snli_1.0_train.jsonl",
+            "val": "data/datasets/snli_1.0/snli_1.0_dev.jsonl",
+            "test": "data/datasets/snli_1.0/snli_1.0_test.jsonl",
+        },
+    },
+    "mnli": {
+        "hg_path": "multi_nli",
+        "hg_splits": {"train": "train", "val": "dev_mismatched", "test": "dev_matched"},
+        "loc_path": {
+            "train": "data/datasets/multinli_1.0/multinli_1.0_train.jsonl",
+            "val": "data/datasets/multinli_1.0/multinli_1.0_dev_mismatched.jsonl",
+            "test": "data/datasets/multinli_1.0/multinli_1.0_dev_matched.jsonl",
+        },
+    },
+}
+
 if __name__ == "__main__":
     args = get_args()
+    ds_opt = args.dataset
+    splits = [
+        _[0]
+        for _ in zip(("train", "val", "test"), (args.train, args.val, args.test))
+        if _[1]
+    ]
     preprocessor = Preprocessor()
 
-    if args.ds == "snli":
-        dataset = load_dataset("snli")
-        split_names = {"train": "train", "val": "validation", "test": "test"}
-    elif args.ds == "mnli":
-        dataset = load_dataset("multi_nli")
-        split_names = {
-            "train": "train",
-            "val": "validation_mismatched",
-            "test": "validation_matched",
-        }
-    else:
+    if ds_opt not in ds_config.keys():
         raise ValueError('Please enter either "--ds snli" or "--ds mnli".')
-
-    splits = [
-        "train" if args.train else None,
-        "val" if args.val else None,
-        "test" if args.test else None,
-    ]
-
-    for split in splits:
-        print(f"Preprocessing {args.ds}/{split}...")
-        if split is not None:
-            split_preprocessed = preprocessor.process_dataset(
-                dataset[split_names[split]]
-            )
-            with open(
-                f"./data/encodings/{args.ds}/tokens/{split}_tokens.pkl", "wb+"
-            ) as f:
-                print(f"Saving preprocessed dataset {args.ds}/{split}...")
-                pickle.dump(split_preprocessed, f)
-                print(f"{args.ds}/{split} saved.")
+    else:
+        if args.variation == "hg":
+            for split in splits:
+                split_processed = preprocessor.process_dataset(
+                    load_dataset(
+                        ds_config[ds_opt]["hg_path"],
+                        split=ds_config[ds_opt]["hg_path"][split],
+                    )
+                )
+                with open(
+                    f"data/encodings/{ds_opt}/tokens/{split}_tokens.pkl", "wb+"
+                ) as f:
+                    print(f"Saving preprocessed dataset {ds_opt}->{split}...")
+                    pickle.dump(split_processed, f)
+                    print(f"{ds_opt}->{split} saved.")
 
     print(f"All splits preprocessed and saved.")
