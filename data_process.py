@@ -8,14 +8,12 @@ from spacy.tokens.span import Span
 from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer, BatchEncoding
 from chunker import Chunker
+from os import makedirs
 
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("dataset", action="store")
-    parser.add_argument(
-        "variation", action="store", default="hg", choices=["hg", "loc"]
-    )
+    parser.add_argument("dataset", action="store", choices=("snli", "mnli"))
     parser.add_argument("--train", action="store_true", default=False)
     parser.add_argument("--val", action="store_true", default=False)
     parser.add_argument("--test", action="store_true", default=False)
@@ -119,18 +117,14 @@ class Preprocessor:
 
 ds_config = {
     "snli": {
-        "hg_path": "snli",
-        "hg_splits": {"train": "train", "val": "validation", "test": "test"},
-        "loc_path": {
+        "path": {
             "train": "data/datasets/snli_1.0/snli_1.0_train.jsonl",
             "val": "data/datasets/snli_1.0/snli_1.0_dev.jsonl",
             "test": "data/datasets/snli_1.0/snli_1.0_test.jsonl",
         },
     },
     "mnli": {
-        "hg_path": "multi_nli",
-        "hg_splits": {"train": "train", "val": "dev_mismatched", "test": "dev_matched"},
-        "loc_path": {
+        "path": {
             "train": "data/datasets/multinli_1.0/multinli_1.0_train.jsonl",
             "val": "data/datasets/multinli_1.0/multinli_1.0_dev_mismatched.jsonl",
             "test": "data/datasets/multinli_1.0/multinli_1.0_dev_matched.jsonl",
@@ -151,19 +145,23 @@ if __name__ == "__main__":
     if ds_opt not in ds_config.keys():
         raise ValueError('Please enter either "--ds snli" or "--ds mnli".')
     else:
-        if args.variation == "hg":
-            for split in splits:
-                split_processed = preprocessor.process_dataset(
-                    load_dataset(
-                        ds_config[ds_opt]["hg_path"],
-                        split=ds_config[ds_opt]["hg_path"][split],
-                    )
-                )
-                with open(
-                    f"data/encodings/{ds_opt}/tokens/{split}_tokens.pkl", "wb+"
-                ) as f:
-                    print(f"Saving preprocessed dataset {ds_opt}->{split}...")
-                    pickle.dump(split_processed, f)
-                    print(f"{ds_opt}->{split} saved.")
+        for split in splits:
+            dataset = Dataset.from_json(ds_config[ds_opt]["path"][split])
+            dataset=dataset.rename_columns(
+                {
+                    "sentence1": "premise",
+                    "sentence2": "hypothesis",
+                    "gold_label": "label",
+                }
+            )
+            print(type(dataset))
+            print(dataset)
+            split_processed = preprocessor.process_dataset(dataset)
+            save_dir = f"data/encodings/{ds_opt}/tokens/"
+            makedirs(save_dir, exist_ok=True)
+            with open(save_dir + f"{split}_tokens.pkl", "wb") as f:
+                print(f"Saving preprocessed dataset {ds_opt}->{split}...")
+                pickle.dump(split_processed, f)
+                print(f"{ds_opt}->{split} saved.")
 
     print(f"All splits preprocessed and saved.")
