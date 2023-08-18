@@ -50,6 +50,10 @@ class Preprocessor:
 
         p_phrases_text = [_.text for _ in p_phrases]
         h_phrases_text = [_.text for _ in h_phrases]
+
+        p_phrases_idx = [(_.start, _.end) for _ in p_phrases]
+        h_phrases_idx = [(_.start, _.end) for _ in h_phrases]
+
         p_phrase_tokens = (
             self.tokenizer(
                 p_phrases_text, padding=True, truncation=True, max_length=256
@@ -88,8 +92,10 @@ class Preprocessor:
             "idx": idx,
             "p_sent": premise,
             "h_sent": hypothesis,
-            "p_phrases": p_phrases,
-            "h_phrases": h_phrases,
+            "p_phrases": p_phrases_text,
+            "h_phrases": h_phrases_text,
+            "p_phrases_idx": p_phrases_idx,
+            "h_phrases_idx": h_phrases_idx,
             "p_phrase_tokens": p_phrase_tokens,
             "h_phrase_tokens": h_phrase_tokens,
             "p_sent_tokens": p_sent_tokens,
