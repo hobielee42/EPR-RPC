@@ -41,7 +41,7 @@ class Preprocessor:
             pretrained_tokenizer_name_or_path
         )
 
-    def process(self, ex: dict):
+    def process(self, ex: dict, idx: int):
         premise = ex["sentence1"]
         hypothesis = ex["sentence2"]
 
@@ -85,10 +85,11 @@ class Preprocessor:
         label2id = {"entailment": 0, "contradiction": 1, "neutral": 2}
 
         return {
+            "idx": idx,
             "p_sent": premise,
             "h_sent": hypothesis,
-            "p_phrases": [_.text for _ in p_phrases],
-            "h_phrases": [_.text for _ in h_phrases],
+            "p_phrases": p_phrases,
+            "h_phrases": h_phrases,
             "p_phrase_tokens": p_phrase_tokens,
             "h_phrase_tokens": h_phrase_tokens,
             "p_sent_tokens": p_sent_tokens,

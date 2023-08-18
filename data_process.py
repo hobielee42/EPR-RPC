@@ -51,7 +51,9 @@ if __name__ == "__main__":
         for split in splits:
             ds = Dataset.from_json(ds_config[ds_name]["path"][split])
             ds = ds.filter(lambda ex: ex["gold_label"] in labels)
-            ds = ds.map(preprocessor.process, remove_columns=ds.column_names)
+            ds = ds.map(
+                preprocessor.process, with_indices=True, remove_columns=ds.column_names
+            )
             print(ds)
             save_dir = f"data/encodings/{ds_name}/tokens/"
             makedirs(save_dir, exist_ok=True)
