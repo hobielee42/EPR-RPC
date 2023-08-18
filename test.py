@@ -1,5 +1,6 @@
 import spacy
 from datasets import load_dataset, Dataset
+from numpy import arange
 from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
@@ -40,7 +41,7 @@ tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
 # preprocessor = Preprocessor()
 # encoded_ex = preprocessor.encode(ex_snli)
 #
-# for key in encoded_ex.keys():
+# for key in encoded_ex:
 #     print(key + ': ' + str(encoded_ex[key]))
 
 preprocessor = Preprocessor()
@@ -59,15 +60,32 @@ preprocessor = Preprocessor()
 # _ = preprocessor.process(ex)
 chunker = Chunker()
 # _ = chunker.chunk("fo")
+labels = {"entailment": 0, "contradiction": 1, "neutral": 2}
 
+snli = Dataset.from_json("data/datasets/snli_1.0/snli_1.0_test.jsonl")
 mnli = Dataset.from_json("data/datasets/multinli_1.0/multinli_1.0_train.jsonl")
-mnli = mnli.rename_columns(
-    {
-        "sentence1": "premise",
-        "sentence2": "hypothesis",
-        "gold_label": "label",
-    }
-)
+# snli = snli.rename_columns(
+#     {
+#         "sentence1": "premise",
+#         "sentence2": "hypothesis",
+#         "gold_label": "label",
+#     }
+# )
+#
+# mnli = mnli.rename_columns(
+#     {
+#         "sentence1": "premise",
+#         "sentence2": "hypothesis",
+#         "gold_label": "label",
+#     }
+# )
 
-ex = mnli[21853]
-output = preprocessor.process(ex)
+# snli = snli.filter(lambda ex: ex["gold_label"] == "-")
+snli = snli.filter(lambda ex: ex["gold_label"] in labels)
+mnli = mnli.filter(lambda ex: ex["gold_label"] in labels)
+
+ds_slice = snli.select(arange(0, 1000))
+
+ds_slice = ds_slice.map(
+    lambda ex: preprocessor.process(ex), remove_columns=ds_slice.column_names
+)

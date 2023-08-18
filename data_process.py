@@ -1,14 +1,13 @@
 import argparse
 import pickle
+from os import makedirs
 
 import numpy as np
-from datasets import load_dataset, Dataset
-from numpy import ndarray
+from datasets import Dataset
 from spacy.tokens.span import Span
-from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer, BatchEncoding
+
 from chunker import Chunker
-from os import makedirs
 
 
 def get_args():
@@ -39,6 +38,7 @@ def get_phrase_masks(phrases: list[Span], sent_tokens: BatchEncoding):
         # )
         # print(f"start_token: {start_token}; end_token: {end_token}")
         #
+        mask[start_token : (end_token + 1)] = 1
         masks.append(mask)
 
     return masks
@@ -56,8 +56,8 @@ class Preprocessor:
         )
 
     def process(self, ex):
-        premise = ex["premise"]
-        hypothesis = ex["hypothesis"]
+        premise = ex["sentence1"]
+        hypothesis = ex["sentence2"]
 
         p_phrases = self.chunker.chunk(premise)
         h_phrases = self.chunker.chunk(hypothesis)
@@ -96,6 +96,8 @@ class Preprocessor:
         # output['p_phrase_idx'] = [(_.start, _.end) for _ in p_phrases]
         # output['h_phrase_idx'] = [(_.start, _.end) for _ in h_phrases]
 
+        label2id = {"entailment": 0, "contradiction": 1, "neutral": 2}
+
         return {
             "p_sent": premise,
             "h_sent": hypothesis,
@@ -107,21 +109,21 @@ class Preprocessor:
             "h_sent_tokens": h_sent_tokens,
             "p_masks": p_masks,
             "h_masks": h_masks,
-            "label": ex["label"],
+            "label": label2id[ex["gold_label"]],
         }
 
-    def process_dataset(self, dataset: Dataset):
-        dataloader = []
-        print(f"Preprocessing {len(dataset)} examples...")
-        pbar = tqdm(dataset)
-        for i, ex in enumerate(pbar):
-            dataloader.append(self.process(ex))
-            pbar.set_description(f"Preprocessing sample #{i}")
-        print(
-            f'{len(dataloader)} out of the total {len(dataset)} {"is" if len(dataloader) in [0,1] else "are"} preprocessed.'
-        )
-
-        return dataloader
+    # def process_dataset(self, dataset: Dataset):
+    #     dataloader = []
+    #     print(f"Preprocessing {len(dataset)} examples...")
+    #     pbar = tqdm(dataset)
+    #     for i, ex in enumerate(pbar):
+    #         dataloader.append(self.process(ex))
+    #         pbar.set_description(f"Preprocessing sample #{i}")
+    #     print(
+    #         f'{len(dataloader)} out of the total {len(dataset)} {"is" if len(dataloader) in [0,1] else "are"} preprocessed.'
+    #     )
+    #
+    #     return dataloader
 
 
 ds_config = {
@@ -151,26 +153,22 @@ if __name__ == "__main__":
     ]
     preprocessor = Preprocessor()
 
-    if ds_opt not in ds_config.keys():
+    if ds_opt not in ds_config:
         raise ValueError('Please enter either "--ds snli" or "--ds mnli".')
     else:
+        labels = {"entailment": 0, "contradiction": 1, "neutral": 2}
         for split in splits:
-            dataset = Dataset.from_json(ds_config[ds_opt]["path"][split])
-            dataset = dataset.rename_columns(
-                {
-                    "sentence1": "premise",
-                    "sentence2": "hypothesis",
-                    "gold_label": "label",
-                }
+            ds = Dataset.from_json(ds_config[ds_opt]["path"][split])
+            ds = ds.filter(lambda ex: ex["gold_label"] in labels)
+            ds = ds.map(
+                lambda ex: preprocessor.process(ex), remove_columns=ds.column_names
             )
-            print(type(dataset))
-            print(dataset)
-            split_processed = preprocessor.process_dataset(dataset)
+            print(ds)
             save_dir = f"data/encodings/{ds_opt}/tokens/"
             makedirs(save_dir, exist_ok=True)
             with open(save_dir + f"{split}_tokens.pkl", "wb") as f:
                 print(f"Saving preprocessed dataset {ds_opt}->{split}...")
-                pickle.dump(split_processed, f)
+                pickle.dump(ds, f)
                 print(f"{ds_opt}->{split} saved.")
 
     print(f"All splits preprocessed and saved.")
