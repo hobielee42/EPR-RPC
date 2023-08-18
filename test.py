@@ -5,7 +5,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
 from chunker import Chunker
-from data_process import Preprocessor
+from preprocessor import Preprocessor
 
 # chunker & tokenizer test
 
