@@ -43,8 +43,8 @@ aligner = Aligner(device)
 aligned_phrase_pairs = aligner.compute(ex)
 
 print(
-    f"Premise: {ex['premise']}"
-    f"Hypothesis: {ex['hypothesis']}"
+    f"Premise: {ex['p_sent']}"
+    f"Hypothesis: {ex['h_sent']}"
     f"Phrases in premise: {ex['p_phrases']}"
     f"Phrases in hypothesis: {ex['h_phrases']}"
     f"Phrase alignment:"
