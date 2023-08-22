@@ -44,15 +44,15 @@ class Aligner:
         global_sims = cosine_similarity_matrix(global_embeddings_p, global_embeddings_h)
         similarities = self.lambda_ * global_sims + (1 - self.lambda_) * local_sims
 
-        print(similarities)
+        # print(similarities)
 
         # Find the maximum element indices along each row
         max_row_indices = torch.argmax(similarities, dim=1)
-        print(max_row_indices)
+        # print(max_row_indices)
 
         # Find the maximum element indices along each column
         max_col_indices = torch.argmax(similarities, dim=0)
-        print(max_col_indices)
+        # print(max_col_indices)
 
         # Initialize a list to store the results
         results = []
