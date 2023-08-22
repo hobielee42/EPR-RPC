@@ -41,7 +41,7 @@ class Preprocessor:
             pretrained_tokenizer_name_or_path
         )
 
-    def process(self, ex: dict, idx: int):
+    def process(self, ex: dict, idx=None):
         premise = ex["sentence1"]
         hypothesis = ex["sentence2"]
 

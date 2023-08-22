@@ -4,6 +4,7 @@ from transformers import AutoModel
 from torch import tensor
 import torch
 import torch.nn.functional as F
+from aligner import Aligner
 from models import SBert
 from preprocessor import Preprocessor
 
@@ -25,15 +26,18 @@ case_study = {
     "sentence2": "There is only one dog at the beach.",
     "gold_label": "contradiction",
 }
-
+case_study = preprocessor.process(case_study)
 ex = preprocessor.process(ex, 1024)
 
 model = SBert().to(device)
-local_ = model(
-    tensor(ex["p_phrase_tokens"]["input_ids"]).to(device),
-    tensor(ex["p_phrase_tokens"]["attention_mask"]).to(device),
-)
-global_ = model(
-    tensor(ex["p_sent_tokens"]["input_ids"]).to(device),
-    tensor(ex["p_masks"]).to(device),
-)
+# local_ = model(
+#     tensor(ex["p_phrase_tokens"]["input_ids"]).to(device),
+#     tensor(ex["p_phrase_tokens"]["attention_mask"]).to(device),
+# )
+# global_ = model(
+#     tensor(ex["p_sent_tokens"]["input_ids"]).to(device),
+#     tensor(ex["p_masks"]).to(device),
+# )
+
+aligner = Aligner(SBert(), device)
+output=aligner.compute(case_study)
