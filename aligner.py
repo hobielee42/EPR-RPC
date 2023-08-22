@@ -17,29 +17,33 @@ def cosine_similarity_matrix(A: Tensor, B: Tensor):
 
 class Aligner:
     def __init__(
-        self, model: nn.Module, device: Literal["cuda", "mps", "cpu"], lambda_=0.6
+        self,
+        device: str,
+        model: nn.Module = SBert(),
+        lambda_=0.6,
     ):
         self.device = device
         self.model = model.to(device)
         self.lambda_ = lambda_
 
     def compute(self, ex: dict):
-        local_embeddings_p = self.model(
-            tensor(ex["p_phrase_tokens"]["input_ids"]).to(self.device),
-            tensor(ex["p_phrase_tokens"]["attention_mask"]).to(self.device),
-        )
-        global_embeddings_p = self.model(
-            tensor(ex["p_sent_tokens"]["input_ids"]).to(self.device),
-            tensor(ex["p_masks"]).to(self.device),
-        )
-        local_embeddings_h = self.model(
-            tensor(ex["h_phrase_tokens"]["input_ids"]).to(self.device),
-            tensor(ex["h_phrase_tokens"]["attention_mask"]).to(self.device),
-        )
-        global_embeddings_h = self.model(
-            tensor(ex["h_sent_tokens"]["input_ids"]).to(self.device),
-            tensor(ex["h_masks"]).to(self.device),
-        )
+        with torch.no_grad():
+            local_embeddings_p = self.model(
+                tensor(ex["p_phrase_tokens"]["input_ids"]).to(self.device),
+                tensor(ex["p_phrase_tokens"]["attention_mask"]).to(self.device),
+            )
+            global_embeddings_p = self.model(
+                tensor(ex["p_sent_tokens"]["input_ids"]).to(self.device),
+                tensor(ex["p_masks"]).to(self.device),
+            )
+            local_embeddings_h = self.model(
+                tensor(ex["h_phrase_tokens"]["input_ids"]).to(self.device),
+                tensor(ex["h_phrase_tokens"]["attention_mask"]).to(self.device),
+            )
+            global_embeddings_h = self.model(
+                tensor(ex["h_sent_tokens"]["input_ids"]).to(self.device),
+                tensor(ex["h_masks"]).to(self.device),
+            )
         local_sims = cosine_similarity_matrix(local_embeddings_p, local_embeddings_h)
         global_sims = cosine_similarity_matrix(global_embeddings_p, global_embeddings_h)
         similarities = self.lambda_ * global_sims + (1 - self.lambda_) * local_sims

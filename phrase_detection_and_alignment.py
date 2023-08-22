@@ -2,8 +2,10 @@ import argparse
 import pickle
 from os import makedirs
 
+import torch
 from datasets import Dataset
 
+from aligner import Aligner
 from preprocessor import Preprocessor
 
 
@@ -35,14 +37,23 @@ ds_config = {
 
 if __name__ == "__main__":
     args = get_args()
-    ds_name = args.dataset
+    ds_name: str = args.dataset
     splits = [
         _[0]
         for _ in zip(("train", "val", "test"), (args.train, args.val, args.test))
         if _[1]
     ]
 
+    device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
+    print(f"Device: {device}")
     preprocessor = Preprocessor()
+    aligner = Aligner(device)
 
     if ds_name not in ds_config:
         raise ValueError('Please enter either "snli" or "mnli" for dataset.')
@@ -55,11 +66,22 @@ if __name__ == "__main__":
                 preprocessor.process, with_indices=True, remove_columns=ds.column_names
             )
             print(ds)
-            save_dir = f"data/encodings/{ds_name}/tokens/"
-            makedirs(save_dir, exist_ok=True)
-            with open(save_dir + f"{split}_tokens.pkl", "wb") as f:
+
+            alignment = []
+            for ex in ds:
+                alignment.append(aligner.compute(ex))
+
+            tokens_save_dir = f"data/encodings/{ds_name}/tokens/"
+            alignment_save_dir = f"data/encodings/{ds_name}/alignment/"
+            makedirs(tokens_save_dir, exist_ok=True)
+            makedirs(alignment_save_dir, exist_ok=True)
+            with open(tokens_save_dir + f"{split}_tokens.pkl", "wb") as f:
                 print(f"Saving preprocessed dataset {ds_name}->{split}...")
                 pickle.dump(ds, f)
-                print(f"{ds_name}->{split} saved.")
+                print(f"{ds_name.capitalize()}->{split} saved.")
+            with open(alignment_save_dir + f"{split}_alignment.pkl", "wb") as f:
+                print(f"Saving alignment of {ds_name}->{split}...")
+                pickle.dump(alignment, f)
+                print(f"Alignment of {ds_name}->{split} saved.")
 
     print(f"All splits preprocessed and saved.")
