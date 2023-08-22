@@ -58,9 +58,7 @@ class Aligner:
         results = []
 
         # Iterate over each row and check if the maximum element is also the maximum in its column
-        for p, h in enumerate(max_col_indices):
-            if p == max_row_indices[h]:
+        for p, h in enumerate(max_row_indices):
+            if p == max_col_indices[h]:
                 results.append((p, int(h)))
-
-        print("Results:", results)
         return results

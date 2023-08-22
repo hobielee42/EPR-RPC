@@ -22,8 +22,8 @@ preprocessor = Preprocessor()
 ex = snli[1024]
 
 case_study = {
-    "sentence1": "Some dogs are running on a deserted beach.",
-    "sentence2": "There is only one dog at the beach.",
+    "sentence1": "An elderly couple in heavy coats are looking at black and white photos displayed on the wall.",
+    "sentence2": "octogenarians admiring the old photographs that decorated the wall",
     "gold_label": "contradiction",
 }
 case_study = preprocessor.process(case_study)
