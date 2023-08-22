@@ -16,10 +16,11 @@ device = (
     if torch.backends.mps.is_available()
     else "cpu"
 )
+print(f"Device: {device}")
 
 snli = Dataset.from_json("data/datasets/snli_1.0/snli_1.0_test.jsonl")
 preprocessor = Preprocessor()
-ex = snli[1024]
+# ex = snli[1024]
 
 ex = {
     "sentence1": "An elderly couple in heavy coats are looking at black and white photos displayed on the wall.",
@@ -27,7 +28,7 @@ ex = {
     "gold_label": "contradiction",
 }
 ex = preprocessor.process(ex)
-ex = preprocessor.process(ex, 1024)
+
 
 model = SBert().to(device)
 # local_ = model(
@@ -39,6 +40,16 @@ model = SBert().to(device)
 #     tensor(ex["p_masks"]).to(device),
 # )
 aligner = Aligner(device)
-aligned_phrase_pairs=aligner.compute(ex)
-for aligned_prhases in aligned_phrase_pairs:
-    print(f'Premise: {ex["p_phrases"][aligned_prhases[0]]}; Hypothesis: {ex["h_phrases"][aligned_prhases[1]]}')
+aligned_phrase_pairs = aligner.compute(ex)
+
+print(
+    f"Premise: {ex['premise']}"
+    f"Hypothesis: {ex['hypothesis']}"
+    f"Phrases in premise: {ex['p_phrases']}"
+    f"Phrases in hypothesis: {ex['h_phrases']}"
+    f"Phrase alignment:"
+)
+for aligned_phrases in aligned_phrase_pairs:
+    print(
+        f'   p: {ex["p_phrases"][aligned_phrases[0]]}; h: {ex["h_phrases"][aligned_phrases[1]]}'
+    )
