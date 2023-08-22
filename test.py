@@ -40,4 +40,6 @@ model = SBert().to(device)
 # )
 
 aligner = Aligner(SBert(), device)
-output=aligner.compute(case_study)
+aligned_phrase_pairs=aligner.compute(case_study)
+for aligned_prhases in aligned_phrase_pairs:
+    print(f'Premise: {case_study["p_phrases"][aligned_prhases[0]]}; Hypothesis: {case_study["h_phrases"][aligned_prhases[1]]}')
