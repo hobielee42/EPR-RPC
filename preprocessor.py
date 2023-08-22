@@ -100,8 +100,8 @@ class Preprocessor:
             "h_phrase_tokens": h_phrase_tokens,
             "p_sent_tokens": p_sent_tokens,
             "h_sent_tokens": h_sent_tokens,
-            "p_masks": p_masks,
-            "h_masks": h_masks,
+            "p_masks": np.array(p_masks),
+            "h_masks": np.array(h_masks),
             "label": label2id[ex["gold_label"]],
         }
 
