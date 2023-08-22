@@ -21,12 +21,12 @@ snli = Dataset.from_json("data/datasets/snli_1.0/snli_1.0_test.jsonl")
 preprocessor = Preprocessor()
 ex = snli[1024]
 
-case_study = {
+ex = {
     "sentence1": "An elderly couple in heavy coats are looking at black and white photos displayed on the wall.",
     "sentence2": "octogenarians admiring the old photographs that decorated the wall",
     "gold_label": "contradiction",
 }
-case_study = preprocessor.process(case_study)
+ex = preprocessor.process(ex)
 ex = preprocessor.process(ex, 1024)
 
 model = SBert().to(device)
@@ -38,8 +38,7 @@ model = SBert().to(device)
 #     tensor(ex["p_sent_tokens"]["input_ids"]).to(device),
 #     tensor(ex["p_masks"]).to(device),
 # )
-
-aligner = Aligner(SBert(), device)
-aligned_phrase_pairs=aligner.compute(case_study)
+aligner = Aligner(device)
+aligned_phrase_pairs=aligner.compute(ex)
 for aligned_prhases in aligned_phrase_pairs:
-    print(f'Premise: {case_study["p_phrases"][aligned_prhases[0]]}; Hypothesis: {case_study["h_phrases"][aligned_prhases[1]]}')
+    print(f'Premise: {ex["p_phrases"][aligned_prhases[0]]}; Hypothesis: {ex["h_phrases"][aligned_prhases[1]]}')
