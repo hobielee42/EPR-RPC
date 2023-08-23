@@ -1,4 +1,5 @@
 from typing import Literal
+from numpy import arange
 
 import torch
 from torch import nn, Tensor
@@ -21,6 +22,12 @@ class SBert(nn.Module):
             pretrained_model_name_or_path
         )
 
+    def forward(self, input_ids: Tensor, masks: Tensor):
+        if input_ids.dim() == 2:  # local mode
+            return self.get_local_embeddings(input_ids, masks)
+        elif input_ids.dim() == 1:  # global mode
+            return self.get_global_embeddings(input_ids.unsqueeze(0), masks)
+
     def get_local_embeddings(self, input_ids: Tensor, attention_mask: Tensor):
         model_output = self.model(input_ids, attention_mask)
         return mean_pooling(model_output[0], attention_mask)
@@ -30,12 +37,6 @@ class SBert(nn.Module):
         return mean_pooling(
             model_output[0].expand(phrase_masks.size(0), -1, -1), phrase_masks
         )
-
-    def forward(self, input_ids: Tensor, masks: Tensor):
-        if input_ids.dim() == 2:  # local mode
-            return self.get_local_embeddings(input_ids, masks)
-        elif input_ids.dim() == 1:  # global mode
-            return self.get_global_embeddings(input_ids.unsqueeze(0), masks)
 
 
 class MLP(nn.Module):
@@ -61,23 +62,94 @@ class MLP(nn.Module):
         return self.model(torch.cat([p, h, torch.abs(p - h), p * h], dim=-1))
 
 
-class Inducer(nn.Module):
-    def __init__(self, embed_dim, local_=False, global_=False):
-        if not local_ and not global_:
-            raise ValueError(
-                "Must use at least one of or both local and global features."
-            )
+class EPR(nn.Module):
+    def __init__(self, mode, embed_dim=768):
+        if mode not in ["local", "global", "concat"]:
+            raise ValueError("Invalid mode.")
         super().__init__()
 
-        local_sbert, global_sbert = SBert(), SBert()
-        if local_ and global_:
-            self.lm = [local_sbert, global_sbert]
-        elif local_:
-            self.lm = local_sbert
-        elif global_:
-            self.lm = global_sbert
+        self.mode = mode
+        if mode == "concat":
+            self.lm = [SBert(), SBert()]
+            self.input_dim = embed_dim * 2
+        else:
+            self.input_dim = embed_dim
+            self.lm = SBert()
 
-        self.MLP = MLP(embed_dim)
+        self.mlp = MLP(self.input_dim)
 
-    def forward(self, ex):
-        pass
+    def forward(
+        self,
+        ex: dict,
+        empty_tokens: torch.nn.Embedding,
+        empty_token_indices: list[Tensor],
+    ):
+        p_phrase_tokens = ex["p_phrase_tokens"]
+        p_sent_tokens = ex["p_sent_tokens"]
+        p_masks = ex["p_masks"]
+        h_phrase_tokens = ex["h_phrase_tokens"]
+        h_sent_tokens = ex["h_sent_tokens"]
+        h_masks = ex["h_masks"]
+        alignment = ex["alignment"]
+
+        assert empty_tokens.embedding_dim == self.input_dim
+        assert all(
+            [
+                p_masks.size(dim=0),
+                h_masks.size(dim=0),
+            ]
+        )
+
+        num_p_phrases = len(p_masks)
+        num_h_phrases = len(h_masks)
+
+        # get embeddings
+        if self.mode == "concat":
+            local_embeddings_p = self.lm(
+                p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
+            )
+            local_embeddings_h = self.lm(
+                h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
+            )
+            global_embeddings_p = self.lm(p_sent_tokens["input_ids"], p_masks)
+            global_embeddings_h = self.lm(h_sent_tokens["input_ids"], h_masks)
+
+            embeddings_p = torch.cat(local_embeddings_p, local_embeddings_h, dim=1)
+            embeddings_h = torch.cat(global_embeddings_p, global_embeddings_h, dim=1)
+
+        elif self.mode == "local":
+            embeddings_p = self.lm(
+                p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
+            )
+            embeddings_h = self.lm(
+                h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
+            )
+
+        else:  # global
+            embeddings_p = self.lm(p_sent_tokens["input_ids"], p_masks)
+            embeddings_h = self.lm(h_sent_tokens["input_ids"], h_masks)
+
+        embedding_p_empty = empty_tokens(empty_token_indices[0])
+        embedding_h_empty = empty_tokens(empty_token_indices[1])
+
+        phrase_labels = {}
+        for p in arange(num_p_phrases):
+            # unaligned premise phrases
+            if p not in alignment[:, 0]:
+                pr_phrases = self.mlp(embeddings_p[p], embedding_h_empty)
+                phrase_labels[p, None] = pr_phrases
+
+        for h in arange(num_h_phrases):
+            # unaligned hypothesis phrases
+            if h not in alignment[:, 1]:
+                pr_phrases = self.mlp(
+                    embedding_p_empty,
+                    embeddings_h[h],
+                )
+                phrase_labels[None, h] = pr_phrases
+
+        for p, h in alignment:
+            pr_phrases = self.mlp(embeddings_p[p], embeddings_h[h])
+            phrase_labels[p, h] = pr_phrases
+
+        return phrase_labels

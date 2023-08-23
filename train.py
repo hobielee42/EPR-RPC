@@ -1,5 +1,20 @@
 import pickle
 
+from datasets import Dataset
+import torch
+from torch import tensor
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
+print(f"Device: {device}")
+
 data_config = {
     "snli": {
         "train": {
@@ -34,6 +49,14 @@ data_config = {
 
 if __name__ == "__main__":
     with open(data_config["snli"]["train"]["tokens"], "rb") as f:
-        tokens = pickle.load(f)
+        tokens: Dataset = pickle.load(f)
     with open(data_config["snli"]["train"]["alignments"], "rb") as f:
         alignments = pickle.load(f)
+
+    ds: Dataset = tokens.add_column("alignment", alignments)
+
+    ds_torch = ds.with_format("torch")
+
+    empty_tokens = torch.nn.Embedding(2, 768).to(device)
+
+    dataloader = DataLoader(ds_torch)

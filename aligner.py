@@ -44,9 +44,8 @@ class Aligner:
             ex["h_sent_tokens"],
             ex["h_masks"],
         )
-        if (
-            None
-            not in [
+        if all(
+            [
                 p_phrase_tokens,
                 p_sent_tokens,
                 p_masks,
@@ -54,8 +53,6 @@ class Aligner:
                 h_sent_tokens,
                 h_masks,
             ]
-            and p_masks
-            and h_masks
         ):
             self.model.eval()
             with torch.no_grad():
