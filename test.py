@@ -108,17 +108,4 @@ if __name__ == "__main__":
 
     epr = EPR(mode).to(device)
 
-    output = epr(ex, empty_tokens,empty_token_indices)
-
-    model_weights_path = "model_weights_test.pt"
-    model_shape_path = "model_shape_test.pt"
-
-    torch.save(epr, model_shape_path)
-    torch.save(epr.state_dict(), model_weights_path)
-
-    weights_disk_size = os.path.getsize(model_weights_path)
-    shape_disk_size = os.path.getsize(model_shape_path)
-    print(
-        f"Model size on disk: {shape_disk_size} bytes\n"
-        f"Weights size on disk: {weights_disk_size} bytes"
-    )
+    output = epr(ex, empty_tokens, empty_token_indices)
