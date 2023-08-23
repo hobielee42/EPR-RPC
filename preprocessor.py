@@ -1,6 +1,8 @@
 import numpy as np
 from spacy.tokens import Span
 from transformers import BatchEncoding, PreTrainedTokenizer, AutoTokenizer
+from tokenizers import normalizers
+from tokenizers.normalizers import NFD, StripAccents
 
 from chunker import Chunker
 
@@ -13,8 +15,25 @@ def get_phrase_masks(phrases: list[Span], sent_tokens: BatchEncoding):
             start_char
         ), sent_tokens.char_to_token(end_char - 1)
 
+        # if start_token is None or end_token is None:
+        #     return masks
+
+        while start_char < end_char:
+            if start_token is None:
+                start_char += 1
+                start_token = sent_tokens.char_to_token(start_char)
+            else:
+                break
+
+        while end_char > start_char+1:
+            if end_token is None:
+                end_char -= 1
+                end_token = sent_tokens.char_to_token(end_char - 1)
+            else:
+                break
+
         if start_token is None or end_token is None:
-            return masks
+            continue
 
         mask = np.zeros(len(sent_tokens[0]))
         #
@@ -42,8 +61,8 @@ class Preprocessor:
         )
 
     def process(self, ex: dict, idx=None):
-        premise = ex["sentence1"]
-        hypothesis = ex["sentence2"]
+        premise = ex["sentence1"].strip()
+        hypothesis = ex["sentence2"].strip()
 
         p_phrases = self.chunker.chunk(premise)
         h_phrases = self.chunker.chunk(hypothesis)
@@ -100,8 +119,8 @@ class Preprocessor:
             "h_phrase_tokens": h_phrase_tokens,
             "p_sent_tokens": p_sent_tokens,
             "h_sent_tokens": h_sent_tokens,
-            "p_masks": np.array(p_masks),
-            "h_masks": np.array(h_masks),
+            "p_masks": p_masks,
+            "h_masks": h_masks,
             "label": label2id[ex["gold_label"]],
         }
 

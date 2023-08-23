@@ -8,6 +8,7 @@ class Chunker:
         self._nlp = spacy.load(model_name)
 
     def chunk(self, sent: str) -> list[Span]:
+        # sent = sent.strip()
         doc = self._nlp(sent)
 
         phrase_indices = []
@@ -46,15 +47,15 @@ class Chunker:
                 ops.append(doc[token.i : token.i + 1])
                 phrase_indices.append(token.i)
 
-        # print('doc:', doc)
-        # print('pps:', pps)
-        # print('nps:', nps)
-        # print('vps:', vps)
-        # print('ops:', ops)
+        # print("doc:", doc)
+        # print("pps:", pps)
+        # print("nps:", nps)
+        # print("vps:", vps)
+        # print("ops:", ops)
         # print(phrase_indices)
 
         phrases = pps + nps + vps + ops
         phrases.sort(key=lambda p: p.start)
-        # print('phrases:', phrases)
+        # print("phrases:", phrases)
 
         return phrases

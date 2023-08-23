@@ -3,6 +3,7 @@ from datasets import Dataset
 from transformers import AutoModel
 from torch import tensor
 import torch
+import numpy as np
 import torch.nn.functional as F
 from aligner import Aligner
 from models import SBert
@@ -18,19 +19,23 @@ device = (
 )
 print(f"Device: {device}")
 
-snli = Dataset.from_json("data/datasets/snli_1.0/snli_1.0_test.jsonl")
+labels = ["entailment", "contradiction", "neutral"]
+ds = Dataset.from_json("data/datasets/multinli_1.0/multinli_1.0_train.jsonl")
+ds = ds.filter(lambda ex: ex["gold_label"] in labels)
 preprocessor = Preprocessor()
-# ex = snli[1024]
+aligner = Aligner(device)
+ex = ds[21853]
+model = SBert().to(device)
 
-ex = {
-    "sentence1": "An elderly couple in heavy coats are looking at black and white photos displayed on the wall.",
-    "sentence2": "octogenarians admiring the old photographs that decorated the wall",
-    "gold_label": "contradiction",
-}
+
+# ex = {
+#     "sentence1": "An elderly couple in heavy coats are looking at black and white photos displayed on the wall.",
+#     "sentence2": "octogenarians admiring the old photographs that decorated the wall",
+#     "gold_label": "contradiction",
+# }
+
 ex = preprocessor.process(ex)
 
-
-model = SBert().to(device)
 # local_ = model(
 #     tensor(ex["p_phrase_tokens"]["input_ids"]).to(device),
 #     tensor(ex["p_phrase_tokens"]["attention_mask"]).to(device),
@@ -39,7 +44,7 @@ model = SBert().to(device)
 #     tensor(ex["p_sent_tokens"]["input_ids"]).to(device),
 #     tensor(ex["p_masks"]).to(device),
 # )
-aligner = Aligner(device)
+
 aligned_phrase_pairs = aligner.compute(ex)
 
 print(

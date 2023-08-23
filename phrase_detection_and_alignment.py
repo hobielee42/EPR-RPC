@@ -4,6 +4,7 @@ from os import makedirs
 
 import torch
 from datasets import Dataset
+from tqdm import tqdm
 
 from aligner import Aligner
 from preprocessor import Preprocessor
@@ -63,22 +64,30 @@ if __name__ == "__main__":
             ds = Dataset.from_json(ds_config[ds_name]["path"][split])
             ds = ds.filter(lambda ex: ex["gold_label"] in labels)
             ds = ds.map(
-                preprocessor.process, with_indices=True, remove_columns=ds.column_names
+                preprocessor.process,
+                with_indices=True,
+                remove_columns=ds.column_names,
+                load_from_cache_file=False,
             )
             print(ds)
 
-            alignment = []
-            for ex in ds:
-                alignment.append(aligner.compute(ex))
-
             tokens_save_dir = f"data/encodings/{ds_name}/tokens/"
-            alignment_save_dir = f"data/encodings/{ds_name}/alignment/"
             makedirs(tokens_save_dir, exist_ok=True)
-            makedirs(alignment_save_dir, exist_ok=True)
             with open(tokens_save_dir + f"{split}_tokens.pkl", "wb") as f:
                 print(f"Saving preprocessed dataset {ds_name}->{split}...")
                 pickle.dump(ds, f)
                 print(f"{ds_name.capitalize()}->{split} saved.")
+
+            alignment = []
+            # for ex in ds:
+            #     alignment.append(aligner.compute(ex))
+            pbar = tqdm(ds)
+            for i, ex in enumerate(pbar):
+                pbar.set_description(f"Aligning example {i}")
+                alignment.append(aligner.compute(ex))
+
+            alignment_save_dir = f"data/encodings/{ds_name}/alignment/"
+            makedirs(alignment_save_dir, exist_ok=True)
             with open(alignment_save_dir + f"{split}_alignment.pkl", "wb") as f:
                 print(f"Saving alignment of {ds_name}->{split}...")
                 pickle.dump(alignment, f)
