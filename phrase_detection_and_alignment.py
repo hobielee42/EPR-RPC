@@ -86,11 +86,11 @@ if __name__ == "__main__":
                 pbar.set_description(f"Aligning example {i}")
                 alignment.append(aligner.compute(ex))
 
-            alignment_save_dir = f"data/encodings/{ds_name}/alignment/"
+            alignment_save_dir = f"data/encodings/{ds_name}/alignments/"
             makedirs(alignment_save_dir, exist_ok=True)
-            with open(alignment_save_dir + f"{split}_alignment.pkl", "wb") as f:
-                print(f"Saving alignment of {ds_name}->{split}...")
+            with open(alignment_save_dir + f"{split}_alignments.pkl", "wb") as f:
+                print(f"Saving alignments of {ds_name}->{split}...")
                 pickle.dump(alignment, f)
-                print(f"Alignment of {ds_name}->{split} saved.")
+                print(f"Alignments of {ds_name}->{split} saved.")
 
     print(f"All splits preprocessed and saved.")
