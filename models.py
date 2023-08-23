@@ -11,6 +11,18 @@ def mean_pooling(token_embeddings: Tensor, masks: Tensor) -> Tensor:
     )
 
 
+def get_sent_score_E(phrasal_probs_E: Tensor):
+    return torch.exp(torch.mean(torch.log(phrasal_probs_E)))
+
+
+def get_sent_score_C(phrasal_probs_C_without_unaligned: Tensor):
+    return torch.max(phrasal_probs_C_without_unaligned)
+
+
+def get_sent_score_N(phrasal_probs_N: Tensor, sent_score_C: Tensor):
+    return torch.max(phrasal_probs_N) * (1 - sent_score_C)
+
+
 class SBert(nn.Module):
     def __init__(
         self, pretrained_model_name_or_path="sentence-transformers/all-mpnet-base-v2"
@@ -161,5 +173,21 @@ class EPR(nn.Module):
         phrasal_probs = self.predict_phrasal_label(
             ex, empty_tokens, empty_token_indices
         )
-        phrase_pairs = tuple(phrasal_probs.keys())
+        phrasal_probs_without_unaligned = {
+            key: value for key, value in phrasal_probs.items() if None not in key
+        }
+        # phrase_pairs = tuple(phrasal_probs.keys())
+
         phrasal_probs_values = torch.stack(list(phrasal_probs.values()))
+        phrasal_probs_values_without_unaligned = torch.stack(
+            list(phrasal_probs_without_unaligned.values())
+        )
+
+        sent_score_E = get_sent_score_E(phrasal_probs_values[:, 0])
+        sent_score_C = get_sent_score_C(phrasal_probs_values_without_unaligned[:, 1])
+        sent_score_N = get_sent_score_N(phrasal_probs_values[:, 2], sent_score_C)
+
+        sent_scores = torch.stack((sent_score_E, sent_score_C, sent_score_N))
+        sent_probs = sent_scores / torch.sum(sent_scores)
+
+        return sent_probs
