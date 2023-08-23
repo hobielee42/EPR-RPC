@@ -1,10 +1,8 @@
 import pickle
 
-from datasets import Dataset
 import torch
-from torch import tensor
+from datasets import Dataset
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 device = (
     "cuda"
@@ -56,7 +54,3 @@ if __name__ == "__main__":
     ds: Dataset = tokens.add_column("alignment", alignments)
 
     ds_torch = ds.with_format("torch")
-
-    empty_tokens = torch.nn.Embedding(2, 768).to(device)
-
-    dataloader = DataLoader(ds_torch)

@@ -1,8 +1,6 @@
 import numpy as np
 from spacy.tokens import Span
 from transformers import BatchEncoding, PreTrainedTokenizer, AutoTokenizer
-from tokenizers import normalizers
-from tokenizers.normalizers import NFD, StripAccents
 
 from chunker import Chunker
 
@@ -25,7 +23,7 @@ def get_phrase_masks(phrases: list[Span], sent_tokens: BatchEncoding):
             else:
                 break
 
-        while end_char > start_char+1:
+        while end_char > start_char + 1:
             if end_token is None:
                 end_char -= 1
                 end_token = sent_tokens.char_to_token(end_char - 1)
