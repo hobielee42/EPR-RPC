@@ -88,7 +88,7 @@ class EPR(nn.Module):
         h_phrase_tokens = ex["h_phrase_tokens"]
         h_sent_tokens = ex["h_sent_tokens"]
         h_masks = ex["h_masks"]
-        alignment = ex["alignment"]
+        alignment: Tensor = ex["alignment"]
 
         # assert empty_tokens.embedding_dim == self.input_dim
         assert all(
@@ -130,12 +130,12 @@ class EPR(nn.Module):
         embedding_p_empty = empty_tokens(empty_token_indices[0])
         embedding_h_empty = empty_tokens(empty_token_indices[1])
 
-        phrasal_labels = {}
+        phrasal_probs = {}
         for p in arange(num_p_phrases):
             # unaligned premise phrases
             if p not in alignment[:, 0]:
                 pr_phrases = self.mlp(embeddings_p[p], embedding_h_empty)
-                phrasal_labels[p, None] = pr_phrases
+                phrasal_probs[p, None] = pr_phrases
 
         for h in arange(num_h_phrases):
             # unaligned hypothesis phrases
@@ -144,13 +144,13 @@ class EPR(nn.Module):
                     embedding_p_empty,
                     embeddings_h[h],
                 )
-                phrasal_labels[None, h] = pr_phrases
+                phrasal_probs[None, h] = pr_phrases
 
         for p, h in alignment:
             pr_phrases = self.mlp(embeddings_p[p], embeddings_h[h])
-            phrasal_labels[p, h] = pr_phrases
+            phrasal_probs[p.item(), h.item()] = pr_phrases
 
-        return phrasal_labels
+        return phrasal_probs
 
     def induce_sentence_label(
         self,
@@ -158,6 +158,8 @@ class EPR(nn.Module):
         empty_tokens: torch.nn.Embedding,
         empty_token_indices: list[Tensor],
     ):
-        phrasal_labels = self.predict_phrasal_label(
+        phrasal_probs = self.predict_phrasal_label(
             ex, empty_tokens, empty_token_indices
         )
+        phrase_pairs = tuple(phrasal_probs.keys())
+        phrasal_probs_values = torch.stack(list(phrasal_probs.values()))
