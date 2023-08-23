@@ -88,6 +88,14 @@ class EPR(nn.Module):
 
         self.mlp = MLP(self.input_dim)
 
+    def forward(
+        self,
+        ex: dict,
+        empty_tokens: torch.nn.Embedding,
+        empty_token_indices: list[Tensor],
+    ):
+        return self.induce_sentence_label(ex, empty_tokens, empty_token_indices)
+
     def predict_phrasal_label(
         self,
         ex: dict,

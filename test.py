@@ -107,4 +107,4 @@ if __name__ == "__main__":
 
     epr = EPR(mode).to(device)
 
-    output = epr.predict_phrasal_label(ex, empty_tokens,empty_token_indices)
+    output = epr(ex, empty_tokens,empty_token_indices)
