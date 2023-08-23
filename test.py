@@ -88,10 +88,6 @@ if __name__ == "__main__":
 
     empty_tokens = torch.nn.Embedding(2, 768).to(device)
     empty_token_indices = [tensor(0).to(device), tensor(1).to(device)]
-    empty_tokens = [
-        empty_tokens(empty_token_indices[0]),
-        empty_tokens(empty_token_indices[1]),
-    ]
 
     # sbert = SBert().to(device)
     # mlp = MLP(768).to(device)
@@ -111,4 +107,4 @@ if __name__ == "__main__":
 
     epr = EPR(mode).to(device)
 
-    output = epr.predict_phrasal_label(ex, empty_tokens)
+    output = epr.predict_phrasal_label(ex, empty_tokens,empty_token_indices)

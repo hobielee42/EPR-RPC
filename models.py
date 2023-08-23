@@ -79,7 +79,8 @@ class EPR(nn.Module):
     def predict_phrasal_label(
         self,
         ex: dict,
-        empty_tokens: list,
+        empty_tokens: torch.nn.Embedding,
+        empty_token_indices: list[Tensor],
     ):
         p_phrase_tokens = ex["p_phrase_tokens"]
         p_sent_tokens = ex["p_sent_tokens"]
