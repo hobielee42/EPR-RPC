@@ -199,3 +199,7 @@ class EPR(nn.Module):
         sent_probs = sent_scores / torch.sum(sent_scores)
 
         return sent_probs
+
+
+class Explainer(nn.Module):
+    pass
