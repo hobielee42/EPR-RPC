@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     ds: Dataset = tokens.add_column("alignment", alignments)
 
-    mode = "local"
+    mode = "concat"
 
     ds_torch = ds.with_format("torch")
 

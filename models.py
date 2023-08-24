@@ -104,6 +104,7 @@ class EmptyToken(torch.nn.Embedding):
         )
 
     def __getitem__(self, key):
+        print(f"Tensor device: {self.weight.device}")
         index = tensor(key, device=self.weight.device)
         return self(index)
 
