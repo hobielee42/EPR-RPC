@@ -104,7 +104,6 @@ class EmptyToken(torch.nn.Embedding):
         )
 
     def __getitem__(self, key):
-        print(f"Tensor device: {self.weight.device}")
         index = tensor(key, device=self.weight.device)
         return self(index)
 
@@ -169,8 +168,8 @@ class EPRModel(nn.Module):
             global_embeddings_p = self.global_sbert(p_sent_tokens["input_ids"], p_masks)
             global_embeddings_h = self.global_sbert(h_sent_tokens["input_ids"], h_masks)
 
-            embeddings_p = torch.cat((local_embeddings_p, local_embeddings_h), dim=1)
-            embeddings_h = torch.cat((global_embeddings_p, global_embeddings_h), dim=1)
+            embeddings_p = torch.cat((local_embeddings_p, global_embeddings_p), dim=1)
+            embeddings_h = torch.cat((local_embeddings_h, global_embeddings_h), dim=1)
 
         elif self.mode == "local":
             embeddings_p = self.local_sbert(

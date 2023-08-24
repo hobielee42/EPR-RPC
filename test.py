@@ -111,4 +111,4 @@ if __name__ == "__main__":
     epr = EPRModel(mode, device=device)
 
     print(epr.empty_tokens[0, 1])
-    # output = epr(ex, empty_tokens, empty_token_indices)
+    output = epr(ex)
