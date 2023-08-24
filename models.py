@@ -107,45 +107,23 @@ class EmptyToken(torch.nn.Embedding):
         index = tensor(key, device=self.weight.device)
         return self(index)
 
-    # def to(
-    #     self,
-    #     device=None,
-    #     dtype=None,
-    #     non_blocking=False,
-    #     copy=False,
-    #     memory_format=torch.preserve_format,
-    # ):
-    #     print("This is called.")
-    #     super().to(
-    #         device=device,
-    #         dtype=dtype,
-    #         non_blocking=non_blocking,
-    #         copy=copy,
-    #         memory_format=memory_format,
-    #     )
-    #     for index in self.indices:
-    #         index = index.to(
-    #             device=device,
-    #             dtype=dtype,
-    #             non_blocking=non_blocking,
-    #             copy=copy,
-    #             memory_format=memory_format,
-    #         )
-
 
 class EPRModel(nn.Module):
-    def __init__(self, mode: str, embed_dim=768, device: str = None):
+    def __init__(self, mode: str, embed_dim=768, device: torch.device = None):
         if mode not in ["local", "global", "concat"]:
             raise ValueError("Invalid mode.")
         super().__init__()
 
         self.mode = mode
-        if mode == "concat":
-            self.lm = [SBert(), SBert()]
-            self.input_dim = embed_dim * 2
-        else:
-            self.input_dim = embed_dim
-            self.lm = SBert()
+        # if mode == "concat":
+        #     self.lm = [SBert(), SBert()]
+        #     self.input_dim = embed_dim * 2
+        # else:
+        #     self.input_dim = embed_dim
+        #     self.lm = SBert()
+
+        self.lm = [SBert(), SBert()] if mode == "concat" else SBert()
+        self.input_dim = embed_dim * ((mode == "concat") + 1)
 
         self.mlp = MLP(self.input_dim)
 
@@ -154,20 +132,10 @@ class EPRModel(nn.Module):
         if device:
             self.to(device)
 
-    def forward(
-        self,
-        ex: dict,
-        empty_tokens: torch.nn.Embedding,
-        empty_token_indices: list[Tensor],
-    ):
-        return self.induce_sentence_label(ex, empty_tokens, empty_token_indices)
+    def forward(self, ex: dict):
+        return self.induce_sentence_label(ex)
 
-    def predict_phrasal_label(
-        self,
-        ex: dict,
-        empty_tokens: torch.nn.Embedding,
-        empty_token_indices: list[Tensor],
-    ):
+    def predict_phrasal_label(self, ex: dict):
         p_phrase_tokens = ex["p_phrase_tokens"]
         p_sent_tokens = ex["p_sent_tokens"]
         p_masks = ex["p_masks"]
@@ -215,8 +183,8 @@ class EPRModel(nn.Module):
             embeddings_p = self.lm(p_sent_tokens["input_ids"], p_masks)
             embeddings_h = self.lm(h_sent_tokens["input_ids"], h_masks)
 
-        embedding_p_empty = empty_tokens(empty_token_indices[0])
-        embedding_h_empty = empty_tokens(empty_token_indices[1])
+        embedding_p_empty = self.empty_tokens[0]
+        embedding_h_empty = self.empty_tokens[1]
 
         phrasal_probs = {}
         for p in arange(num_p_phrases):
@@ -240,15 +208,8 @@ class EPRModel(nn.Module):
 
         return phrasal_probs
 
-    def induce_sentence_label(
-        self,
-        ex: dict,
-        empty_tokens: torch.nn.Embedding,
-        empty_token_indices: list[Tensor],
-    ):
-        phrasal_probs = self.predict_phrasal_label(
-            ex, empty_tokens, empty_token_indices
-        )
+    def induce_sentence_label(self, ex: dict):
+        phrasal_probs = self.predict_phrasal_label(ex)
         phrasal_probs_without_unaligned = {
             key: value for key, value in phrasal_probs.items() if None not in key
         }

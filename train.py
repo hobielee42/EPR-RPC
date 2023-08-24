@@ -4,7 +4,7 @@ import torch
 from datasets import Dataset
 from torch.utils.data import DataLoader
 
-device = (
+device = torch.device(
     "cuda"
     if torch.cuda.is_available()
     else "mps"

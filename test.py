@@ -7,6 +7,15 @@ from torch import tensor
 
 from models import EPRModel, EmptyToken
 
+device = torch.device(
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
+print(f"Device: {device}")
+
 data_config = {
     "snli": {
         "train": {
@@ -71,15 +80,6 @@ if __name__ == "__main__":
         alignments = pickle.load(f)
 
     ds: Dataset = tokens.add_column("alignment", alignments)
-
-    device = (
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
-        else "cpu"
-    )
-    print(f"Device: {device}")
 
     mode = "local"
 
