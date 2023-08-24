@@ -110,4 +110,6 @@ if __name__ == "__main__":
 
     epr = EPRModel(mode, device=device)
 
+    epr=epr.to('cpu')
+    print(epr.empty_tokens[0])
     # output = epr(ex, empty_tokens, empty_token_indices)

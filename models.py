@@ -102,13 +102,39 @@ class EmptyToken(torch.nn.Embedding):
             device,
             dtype,
         )
-        self.indices = [tensor(i, device=device) for i in range(self.num_embeddings)]
+        # self.indices = [tensor(i, device=device) for i in range(self.num_embeddings)]
 
     def __getitem__(self, key):
         assert isinstance(key, int)
         assert 0 <= key < self.num_embeddings, "Index out of range"
 
-        return self(self.indices[key])
+        index = tensor(key, device=self.weight.device)
+        return self(index)
+
+    # def to(
+    #     self,
+    #     device=None,
+    #     dtype=None,
+    #     non_blocking=False,
+    #     copy=False,
+    #     memory_format=torch.preserve_format,
+    # ):
+    #     print("This is called.")
+    #     super().to(
+    #         device=device,
+    #         dtype=dtype,
+    #         non_blocking=non_blocking,
+    #         copy=copy,
+    #         memory_format=memory_format,
+    #     )
+    #     for index in self.indices:
+    #         index = index.to(
+    #             device=device,
+    #             dtype=dtype,
+    #             non_blocking=non_blocking,
+    #             copy=copy,
+    #             memory_format=memory_format,
+    #         )
 
 
 class EPRModel(nn.Module):
@@ -127,7 +153,7 @@ class EPRModel(nn.Module):
 
         self.mlp = MLP(self.input_dim)
 
-        self.empty_tokens = EmptyToken(2, self.input_dim)
+        self.empty_tokens = EmptyToken(2, self.input_dim, device=device)
 
         if device:
             self.to(device)
