@@ -1,6 +1,8 @@
+from typing import Optional
+
 import torch
 from numpy import arange
-from torch import nn, Tensor
+from torch import nn, Tensor, tensor
 from transformers import AutoModel, PreTrainedModel
 
 
@@ -70,6 +72,43 @@ class MLP(nn.Module):
 
     def forward(self, p: Tensor, h: Tensor) -> Tensor:
         return self.model(torch.cat([p, h, torch.abs(p - h), p * h], dim=-1))
+
+
+class EmptyToken(torch.nn.Embedding):
+    def __init__(
+        self,
+        num_embeddings: int,
+        embedding_dim: int,
+        padding_idx: Optional[int] = None,
+        max_norm: Optional[float] = None,
+        norm_type: float = 2.0,
+        scale_grad_by_freq: bool = False,
+        sparse: bool = False,
+        _weight: Optional[Tensor] = None,
+        _freeze: bool = False,
+        device=None,
+        dtype=None,
+    ) -> None:
+        super().__init__(
+            num_embeddings,
+            embedding_dim,
+            padding_idx,
+            max_norm,
+            norm_type,
+            scale_grad_by_freq,
+            sparse,
+            _weight,
+            _freeze,
+            device,
+            dtype,
+        )
+        self.indices = [tensor(i, device=device) for i in range(self.num_embeddings)]
+
+    def __getitem__(self, key):
+        assert isinstance(key, int)
+        assert 0 <= key < self.num_embeddings, "Index out of range"
+
+        return self(self.indices[key])
 
 
 class EPR(nn.Module):

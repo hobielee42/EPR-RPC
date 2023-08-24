@@ -5,7 +5,7 @@ import torch
 from datasets import Dataset
 from torch import tensor
 
-from models import EPR
+from models import EPR, EmptyToken
 
 data_config = {
     "snli": {
@@ -87,8 +87,10 @@ if __name__ == "__main__":
 
     ex = to_device(ds_torch[0], device)
 
-    empty_tokens = torch.nn.Embedding(2, 768).to(device)
-    empty_token_indices = [tensor(0).to(device), tensor(1).to(device)]
+    # empty_tokens = torch.nn.Embedding(2, 768).to(device)
+    # empty_token_indices = [tensor(0).to(device), tensor(1).to(device)]
+
+    empty_tokens = EmptyToken(2, 768, device=device)
 
     # sbert = SBert().to(device)
     # mlp = MLP(768).to(device)
@@ -108,4 +110,4 @@ if __name__ == "__main__":
 
     epr = EPR(mode).to(device)
 
-    output = epr(ex, empty_tokens, empty_token_indices)
+    # output = epr(ex, empty_tokens, empty_token_indices)
