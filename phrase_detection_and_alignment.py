@@ -12,7 +12,7 @@ from preprocessor import Preprocessor
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("dataset", action="store", choices=("snli", "mnli"))
+    parser.add_argument("dataset", choices=("snli", "mnli"))
     parser.add_argument("--train", action="store_true", default=False)
     parser.add_argument("--val", action="store_true", default=False)
     parser.add_argument("--test", action="store_true", default=False)

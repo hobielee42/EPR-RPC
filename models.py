@@ -67,7 +67,6 @@ class MLP(nn.Module):
             nn.Linear(hidden_dim1, hidden_dim2),
             nn.ReLU(),
             nn.Linear(hidden_dim2, num_labels),
-            nn.Softmax(dim=-1),
         )
 
     def forward(self, p: Tensor, h: Tensor) -> Tensor:
@@ -109,7 +108,13 @@ class EmptyToken(torch.nn.Embedding):
 
 
 class EPRModel(nn.Module):
-    def __init__(self, mode: str, embed_dim=768, device: torch.device = None):
+    def __init__(
+        self,
+        mode: str,
+        language_model_name_or_path="sentence-transformers/all-mpnet-base-v2",
+        embed_dim=768,
+        device: torch.device = None,
+    ):
         if mode not in ["local", "global", "concat"]:
             raise ValueError("Invalid mode.")
         super().__init__()
@@ -123,8 +128,16 @@ class EPRModel(nn.Module):
         #     self.lm = SBert()
 
         # self.lm = [SBert(), SBert()] if mode == "concat" else SBert()
-        self.local_sbert = SBert() if mode == "concat" or mode == "local" else None
-        self.global_sbert = SBert() if mode == "concat" or mode == "global" else None
+        self.local_sbert = (
+            SBert(language_model_name_or_path)
+            if mode == "concat" or mode == "local"
+            else None
+        )
+        self.global_sbert = (
+            SBert(language_model_name_or_path)
+            if mode == "concat" or mode == "global"
+            else None
+        )
         self.input_dim = embed_dim * ((mode == "concat") + 1)
 
         self.mlp = MLP(self.input_dim)
@@ -158,30 +171,26 @@ class EPRModel(nn.Module):
         num_h_phrases = len(h_masks)
 
         # get embeddings
-        if self.mode == "concat":
-            local_embeddings_p = self.local_sbert(
-                p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
-            )
-            local_embeddings_h = self.local_sbert(
-                h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
-            )
-            global_embeddings_p = self.global_sbert(p_sent_tokens["input_ids"], p_masks)
-            global_embeddings_h = self.global_sbert(h_sent_tokens["input_ids"], h_masks)
+        local_embeddings_p = self.local_sbert(
+            p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
+        )
+        local_embeddings_h = self.local_sbert(
+            h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
+        )
+        global_embeddings_p = self.global_sbert(p_sent_tokens["input_ids"], p_masks)
+        global_embeddings_h = self.global_sbert(h_sent_tokens["input_ids"], h_masks)
 
+        if self.mode == "concat":
             embeddings_p = torch.cat((local_embeddings_p, global_embeddings_p), dim=1)
             embeddings_h = torch.cat((local_embeddings_h, global_embeddings_h), dim=1)
 
         elif self.mode == "local":
-            embeddings_p = self.local_sbert(
-                p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
-            )
-            embeddings_h = self.local_sbert(
-                h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
-            )
+            embeddings_p = local_embeddings_p
+            embeddings_h = local_embeddings_h
 
         else:  # global
-            embeddings_p = self.global_sbert(p_sent_tokens["input_ids"], p_masks)
-            embeddings_h = self.global_sbert(h_sent_tokens["input_ids"], h_masks)
+            embeddings_p = global_embeddings_p
+            embeddings_h = global_embeddings_h
 
         embedding_p_empty = self.empty_tokens[0]
         embedding_h_empty = self.empty_tokens[1]
@@ -206,10 +215,10 @@ class EPRModel(nn.Module):
             pr_phrases = self.mlp(embeddings_p[p], embeddings_h[h])
             phrasal_probs[p.item(), h.item()] = pr_phrases
 
-        return phrasal_probs
+        return phrasal_probs, local_embeddings_p, local_embeddings_h
 
     def induce_sentence_label(self, ex: dict):
-        phrasal_probs = self.predict_phrasal_label(ex)
+        phrasal_probs, _, _ = self.predict_phrasal_label(ex)
         phrasal_probs_without_unaligned = {
             key: value for key, value in phrasal_probs.items() if None not in key
         }
@@ -230,5 +239,6 @@ class EPRModel(nn.Module):
         return sent_probs
 
 
-class Explainer(nn.Module):
-    pass
+# class Explainer(nn.Module):
+#     def __init__(self):
+#         super().__init__()
