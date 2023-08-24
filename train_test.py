@@ -58,7 +58,7 @@ data_config = {
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("local", "global", "concat"))
+    parser.add_argument("mode", choices=("local", "global", "concat"), default="local")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument(
         "--continue", action="store_true", default=False, dest="continue_"
@@ -105,9 +105,10 @@ def train_epoch(
     epoch_loss = tensor(0, device=device)
     hit_count = 0
     num_batches = len_epoch // batch_size
-    pbar = tqdm(train_dl, total=len_epoch)
-    for i, ex in pbar:
+    pbar = tqdm(iter(train_dl), total=len_epoch)
+    for i, ex in enumerate(pbar):
         input, label = ex, ex["label"]
+        # print(input)
 
         pred = model(input)
 
@@ -151,7 +152,7 @@ if __name__ == "__main__":
     with open(data_config["snli"]["test"]["alignments"], "rb") as f:
         test_alignments = pickle.load(f)
 
-    mode, num_epochs, continue_ = get_args()
+    mode, num_epochs, continue_ = "local", 2, False
 
     train_ds: Dataset = train_tokens.add_column(
         "alignment", train_alignments
@@ -159,7 +160,14 @@ if __name__ == "__main__":
     test_ds: Dataset = test_tokens.add_column("alignment", test_alignments).with_format(
         "torch"
     )
-    train_dl: DataLoader = DataLoader(train_ds, shuffle=True)
+
+    test_run_ratio = 0.005
+    len_train = len(train_ds)
+
+    train_dl: DataLoader = DataLoader(
+        train_ds.select(range(int(len_train * test_run_ratio)))
+    )
+    # train_dl: DataLoader = DataLoader(train_ds, shuffle=True)
     test_dl: DataLoader = DataLoader(test_ds)
 
     if not continue_:
@@ -178,3 +186,5 @@ if __name__ == "__main__":
         model, optimizer, scheduler, epoch, track_acc = load_checkpoint(
             data_config["snli"]["model_path"], mode
         )
+
+    train_epoch(model,train_dl, optimizer, scheduler)

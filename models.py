@@ -128,16 +128,8 @@ class EPRModel(nn.Module):
         #     self.lm = SBert()
 
         # self.lm = [SBert(), SBert()] if mode == "concat" else SBert()
-        self.local_sbert = (
-            SBert(language_model_name_or_path)
-            if mode == "concat" or mode == "local"
-            else None
-        )
-        self.global_sbert = (
-            SBert(language_model_name_or_path)
-            if mode == "concat" or mode == "global"
-            else None
-        )
+        self.local_sbert = SBert(language_model_name_or_path)
+        self.global_sbert = SBert(language_model_name_or_path)
         self.input_dim = embed_dim * ((mode == "concat") + 1)
 
         self.mlp = MLP(self.input_dim)
@@ -151,6 +143,7 @@ class EPRModel(nn.Module):
         return self.induce_sentence_label(ex)
 
     def predict_phrasal_label(self, ex: dict):
+        print(f"ex: {ex}")
         p_phrase_tokens = ex["p_phrase_tokens"]
         p_sent_tokens = ex["p_sent_tokens"]
         p_masks = ex["p_masks"]
