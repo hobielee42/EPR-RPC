@@ -88,7 +88,7 @@ class EmptyToken(torch.nn.Embedding):
         _freeze: bool = False,
         device=None,
         dtype=None,
-    ) -> None:
+    ):
         super().__init__(
             num_embeddings,
             embedding_dim,
@@ -126,6 +126,8 @@ class EPRModel(nn.Module):
             self.lm = SBert()
 
         self.mlp = MLP(self.input_dim)
+
+        self.empty_tokens = EmptyToken(2, self.input_dim)
 
         if device:
             self.to(device)
@@ -165,14 +167,16 @@ class EPRModel(nn.Module):
 
         # get embeddings
         if self.mode == "concat":
-            local_embeddings_p = self.lm(
+            local_sbert = self.lm[0]
+            global_sbert = self.lm[1]
+            local_embeddings_p = local_sbert(
                 p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
             )
-            local_embeddings_h = self.lm(
+            local_embeddings_h = local_sbert(
                 h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
             )
-            global_embeddings_p = self.lm(p_sent_tokens["input_ids"], p_masks)
-            global_embeddings_h = self.lm(h_sent_tokens["input_ids"], h_masks)
+            global_embeddings_p = global_sbert(p_sent_tokens["input_ids"], p_masks)
+            global_embeddings_h = global_sbert(h_sent_tokens["input_ids"], h_masks)
 
             embeddings_p = torch.cat((local_embeddings_p, local_embeddings_h), dim=1)
             embeddings_h = torch.cat((global_embeddings_p, global_embeddings_h), dim=1)
