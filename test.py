@@ -39,7 +39,7 @@ data_config = {
 }
 
 
-def to_device(ex: dict, device: str):
+def example_to_device(ex: dict, device: str):
     ex["idx"] = ex["idx"].to(device)
     ex["p_phrase_tokens"]["input_ids"] = ex["p_phrase_tokens"]["input_ids"].to(device)
     ex["p_phrase_tokens"]["attention_mask"] = ex["p_phrase_tokens"][
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     ds_torch = ds.with_format("torch")
 
-    ex = to_device(ds_torch[0], device)
+    ex = example_to_device(ds_torch[0], device)
 
     # empty_tokens = torch.nn.Embedding(2, 768).to(device)
     # empty_token_indices = [tensor(0).to(device), tensor(1).to(device)]
