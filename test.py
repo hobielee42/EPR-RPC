@@ -4,7 +4,7 @@ import pickle
 import torch
 from datasets import Dataset
 from torch import tensor
-
+from torch.utils.data import DataLoader
 from models import EPRModel, EmptyToken
 
 device = torch.device(
@@ -84,6 +84,7 @@ if __name__ == "__main__":
     mode = "concat"
 
     ds_torch = ds.with_format("torch")
+    dataloader=DataLoader(ds_torch)
 
     ex = example_to_device(ds_torch[0], device)
 
