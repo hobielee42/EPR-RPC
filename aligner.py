@@ -19,7 +19,7 @@ def cosine_similarity_matrix(A: Tensor, B: Tensor):
 class Aligner:
     def __init__(
         self,
-        device: str,
+        device: torch.device,
         model: nn.Module = SBert(),
         lambda_=0.6,
     ):

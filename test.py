@@ -1,11 +1,10 @@
-import os
 import pickle
 
 import torch
 from datasets import Dataset
-from torch import tensor
 from torch.utils.data import DataLoader
 from models import EPRModel, EmptyToken
+from train import example_to_device
 
 device = torch.device(
     "cuda"
@@ -47,32 +46,6 @@ data_config = {
     },
 }
 
-
-def example_to_device(ex: dict, device: str):
-    ex["idx"] = ex["idx"].to(device)
-    ex["p_phrase_tokens"]["input_ids"] = ex["p_phrase_tokens"]["input_ids"].to(device)
-    ex["p_phrase_tokens"]["attention_mask"] = ex["p_phrase_tokens"][
-        "attention_mask"
-    ].to(device)
-    ex["h_phrase_tokens"]["input_ids"] = ex["h_phrase_tokens"]["input_ids"].to(device)
-    ex["h_phrase_tokens"]["attention_mask"] = ex["h_phrase_tokens"][
-        "attention_mask"
-    ].to(device)
-    ex["p_sent_tokens"]["input_ids"] = ex["p_sent_tokens"]["input_ids"].to(device)
-    ex["p_sent_tokens"]["attention_mask"] = ex["p_sent_tokens"]["attention_mask"].to(
-        device
-    )
-    ex["h_sent_tokens"]["input_ids"] = ex["h_sent_tokens"]["input_ids"].to(device)
-    ex["h_sent_tokens"]["attention_mask"] = ex["h_sent_tokens"]["attention_mask"].to(
-        device
-    )
-    ex["p_masks"] = ex["p_masks"].to(device)
-    ex["h_masks"] = ex["h_masks"].to(device)
-    ex["label"] = ex["label"].to(device)
-
-    return ex
-
-
 if __name__ == "__main__":
     with open(data_config["snli"]["train"]["tokens"], "rb") as f:
         tokens: Dataset = pickle.load(f)
@@ -84,7 +57,7 @@ if __name__ == "__main__":
     mode = "concat"
 
     ds_torch = ds.with_format("torch")
-    dataloader=DataLoader(ds_torch)
+    dataloader = DataLoader(ds_torch)
 
     ex = example_to_device(ds_torch[0], device)
 
