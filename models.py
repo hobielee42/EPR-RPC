@@ -173,16 +173,16 @@ class EPRModel(nn.Module):
             embeddings_h = torch.cat((global_embeddings_p, global_embeddings_h), dim=1)
 
         elif self.mode == "local":
-            embeddings_p = self.lm(
+            embeddings_p = self.local_sbert(
                 p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
             )
-            embeddings_h = self.lm(
+            embeddings_h = self.local_sbert(
                 h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
             )
 
         else:  # global
-            embeddings_p = self.lm(p_sent_tokens["input_ids"], p_masks)
-            embeddings_h = self.lm(h_sent_tokens["input_ids"], h_masks)
+            embeddings_p = self.global_sbert(p_sent_tokens["input_ids"], p_masks)
+            embeddings_h = self.global_sbert(h_sent_tokens["input_ids"], h_masks)
 
         embedding_p_empty = self.empty_tokens[0]
         embedding_h_empty = self.empty_tokens[1]
