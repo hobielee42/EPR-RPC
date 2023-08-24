@@ -102,12 +102,8 @@ class EmptyToken(torch.nn.Embedding):
             device,
             dtype,
         )
-        # self.indices = [tensor(i, device=device) for i in range(self.num_embeddings)]
 
     def __getitem__(self, key):
-        assert isinstance(key, int)
-        assert 0 <= key < self.num_embeddings, "Index out of range"
-
         index = tensor(key, device=self.weight.device)
         return self(index)
 
