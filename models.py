@@ -123,7 +123,9 @@ class EPRModel(nn.Module):
         #     self.input_dim = embed_dim
         #     self.lm = SBert()
 
-        self.lm = [SBert(), SBert()] if mode == "concat" else SBert()
+        # self.lm = [SBert(), SBert()] if mode == "concat" else SBert()
+        self.local_sbert = SBert() if mode == "concat" or mode == "local" else None
+        self.global_sbert = SBert() if mode == "concat" or mode == "global" else None
         self.input_dim = embed_dim * ((mode == "concat") + 1)
 
         self.mlp = MLP(self.input_dim)
@@ -158,16 +160,14 @@ class EPRModel(nn.Module):
 
         # get embeddings
         if self.mode == "concat":
-            local_sbert = self.lm[0]
-            global_sbert = self.lm[1]
-            local_embeddings_p = local_sbert(
+            local_embeddings_p = self.local_sbert(
                 p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
             )
-            local_embeddings_h = local_sbert(
+            local_embeddings_h = self.local_sbert(
                 h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
             )
-            global_embeddings_p = global_sbert(p_sent_tokens["input_ids"], p_masks)
-            global_embeddings_h = global_sbert(h_sent_tokens["input_ids"], h_masks)
+            global_embeddings_p = self.global_sbert(p_sent_tokens["input_ids"], p_masks)
+            global_embeddings_h = self.global_sbert(h_sent_tokens["input_ids"], h_masks)
 
             embeddings_p = torch.cat((local_embeddings_p, local_embeddings_h), dim=1)
             embeddings_h = torch.cat((global_embeddings_p, global_embeddings_h), dim=1)
