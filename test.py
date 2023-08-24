@@ -5,7 +5,7 @@ import torch
 from datasets import Dataset
 from torch import tensor
 
-from models import EPR, EmptyToken
+from models import EPRModel, EmptyToken
 
 data_config = {
     "snli": {
@@ -108,6 +108,6 @@ if __name__ == "__main__":
     # p=local_ps[1]
     # h=local_hs[2]
 
-    epr = EPR(mode).to(device)
+    epr = EPRModel(mode, device=device)
 
     # output = epr(ex, empty_tokens, empty_token_indices)

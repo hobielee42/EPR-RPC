@@ -111,8 +111,8 @@ class EmptyToken(torch.nn.Embedding):
         return self(self.indices[key])
 
 
-class EPR(nn.Module):
-    def __init__(self, mode, embed_dim=768):
+class EPRModel(nn.Module):
+    def __init__(self, mode: str, embed_dim=768, device: str = None):
         if mode not in ["local", "global", "concat"]:
             raise ValueError("Invalid mode.")
         super().__init__()
@@ -126,6 +126,9 @@ class EPR(nn.Module):
             self.lm = SBert()
 
         self.mlp = MLP(self.input_dim)
+
+        if device:
+            self.to(device)
 
     def forward(
         self,
