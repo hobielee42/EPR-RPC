@@ -60,12 +60,15 @@ if __name__ == "__main__":
     ds_torch = ds.with_format("torch")
     dataloader = DataLoader(ds_torch)
 
-    none_ex=[]
-    for i, ex in enumerate(tqdm(ds_torch)):
-        if ex is None:
-            none_ex.append(i)
+    none_ex = []
+    # for i, ex in enumerate(tqdm(iter(dataloader))):
+    #     if ex is None:
+    #         none_ex.append(i)
 
-    print(none_ex)
+    # print(none_ex)
+
+    corrupted_ex = ds_torch[122105]
+
     # ex = example_to_device(ds_torch[0], device)
     # print(ex)
 
