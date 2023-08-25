@@ -3,24 +3,16 @@ import os
 import pickle
 
 import torch
-from torch import nn, Tensor, tensor
 from datasets import Dataset
-from torch.nn import CrossEntropyLoss
-from torch.optim import Optimizer, lr_scheduler
+from torch import Tensor, tensor
+from torch.nn import NLLLoss
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
 
 from models import EPRModel
-
-device = torch.device(
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
-print(f"Device: {device}")
 
 data_config = {
     "snli": {
@@ -77,12 +69,12 @@ def save_checkpoint(path, model, mode, optimizer, scheduler, epoch, acc):
             "epoch": epoch,
             "accuracy": acc,
         },
-        path + mode + "pth",
+        path + mode + ".pth",
     )
 
 
 def load_checkpoint(path, mode):
-    path = path + mode + "pth"
+    path = path + mode + ".pth"
     checkpoint = torch.load(path)
     return (
         checkpoint["model"],
@@ -122,50 +114,84 @@ def train_epoch(
     model: EPRModel,
     train_dl: DataLoader,
     optimizer: Optimizer,
-    scheduler: lr_scheduler,
+    scheduler: StepLR,
 ):
+    model.train()
+    print(model.local_sbert.training)
+    print(model.global_sbert.training)
+    print(model.mlp.training)
+    print(model.empty_tokens.training)
     len_epoch = len(train_dl)
-    loss_fn = CrossEntropyLoss()
-    batch_loss = tensor(0, device=device)
-    epoch_loss = tensor(0, device=device)
+    loss_fn = NLLLoss()
+    batch_loss = tensor(0.0, device=device)
+    epoch_loss = tensor(0.0, device=device)
     hit_count = 0
     num_batches = len_epoch // batch_size
-    pbar = tqdm(train_dl, total=len_epoch)
-    for i, ex in pbar:
-        input, label = ex, ex["label"]
+    pbar = tqdm(iter(train_dl), total=len_epoch)
+    for i, ex in enumerate(pbar):
+        ex = example_to_device(ex, device)
+        label: Tensor = ex["label"]
 
-        pred = model(input)
+        pred: Tensor = model(ex)
 
-        loss: Tensor = loss_fn(pred, label)
+        loss: Tensor = loss_fn(torch.log(pred.unsqueeze(0)), label.unsqueeze(0))
         batch_loss += loss
         epoch_loss += loss
 
-        hit_count += int(torch.argmax(pred) == label)
+        hit_count += int(torch.argmax(pred, dim=-1) == label)
 
         # end of batch
         if (i + 1) % batch_size == 0 or i >= len_epoch:
             i_batch = i // batch_size + 1
             this_batch_size = i % batch_size + 1
             batch_loss /= this_batch_size
-            batch_acc = hit_count / this_batch_size
 
             batch_loss.backward()
             optimizer.step()
             scheduler.step()
             optimizer.zero_grad()
             pbar.set_description(
-                f"Batch {i_batch}/{num_batches}; Training loss: {batch_loss.item()}; Training accuracy: {batch_acc}"
+                f"Batch {i_batch}/{num_batches}; Training loss: {batch_loss:.4f}; Training accuracy: {(hit_count/(i+1)):.4f}"
             )
-
             batch_loss = 0
 
     return hit_count / len_epoch
+
+
+def evaluation(model: EPRModel, test_dl: DataLoader):
+    model.eval()
+    print(not model.local_sbert.training)
+    print(not model.global_sbert.training)
+    print(not model.mlp.training)
+    print(not model.empty_tokens.training)
+    hit_count = 0
+    len_test = len(test_dl)
+    pbar = tqdm(iter(test_dl))
+    for i, test_ex in enumerate(pbar):
+        input = example_to_device(test_ex, device)
+        test_label = input["label"]
+
+        with torch.no_grad():
+            pred = model(input)
+            hit_count += int(torch.argmax(pred, dim=-1) == test_label)
+
+        pbar.set_description(f"Test accuracy: {hit_count/(i+1)}")
+
+    return hit_count / len_test
 
 
 lr = 5e-5
 batch_size = 256
 
 if __name__ == "__main__":
+    device = torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
+    print(f"Device: {device}")
     # load dataset
     with open(data_config["snli"]["train"]["tokens"], "rb") as f:
         train_tokens: Dataset = pickle.load(f)
@@ -200,6 +226,25 @@ if __name__ == "__main__":
         )
 
     else:
-        model, optimizer, scheduler, epoch, track_acc = load_checkpoint(
+        model, optimizer, scheduler, epoch_start, track_acc = load_checkpoint(
             data_config["snli"]["model_path"], mode
         )
+
+    for epoch in range(epoch_start, num_epochs):
+        train_acc = train_epoch(model, train_dl, optimizer, scheduler)
+
+        with torch.no_grad():
+            test_acc = evaluation(model, test_dl)
+
+            if test_acc > track_acc:
+                track_acc = test_acc
+                print(f"Saving checkpoint with track accuracy = {track_acc}")
+                save_checkpoint(
+                    data_config["snli"]["model_path"],
+                    model,
+                    mode,
+                    optimizer,
+                    scheduler,
+                    epoch + 1,
+                    track_acc,
+                )

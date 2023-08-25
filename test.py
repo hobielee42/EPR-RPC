@@ -4,6 +4,8 @@ import torch
 from datasets import Dataset
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from transformers import PreTrainedTokenizer, AutoTokenizer
+
 from models import EPRModel, EmptyToken
 from train import example_to_device
 

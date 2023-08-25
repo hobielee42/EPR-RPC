@@ -76,29 +76,25 @@ class Preprocessor:
                 p_phrases_text, padding=True, truncation=True, max_length=256
             )
             if p_phrases_text
-            else None
+            else {"input_ids": [[]], "attention_mask": [[]]}
         )
         h_phrase_tokens = (
             self.tokenizer(
                 h_phrases_text, padding=True, truncation=True, max_length=256
             )
             if h_phrases_text
-            else None
+            else {"input_ids": [[]], "attention_mask": [[]]}
         )
 
-        p_sent_tokens = (
-            self.tokenizer(premise, padding=True, truncation=True, max_length=256)
-            if premise
-            else None
+        p_sent_tokens = self.tokenizer(
+            premise, padding=True, truncation=True, max_length=256
         )
-        h_sent_tokens = (
-            self.tokenizer(hypothesis, padding=True, truncation=True, max_length=256)
-            if hypothesis
-            else None
+        h_sent_tokens = self.tokenizer(
+            hypothesis, padding=True, truncation=True, max_length=256
         )
 
-        p_masks = get_phrase_masks(p_phrases, p_sent_tokens) if p_phrases else None
-        h_masks = get_phrase_masks(h_phrases, h_sent_tokens) if h_phrases else None
+        p_masks = get_phrase_masks(p_phrases, p_sent_tokens) if p_phrases else [[]]
+        h_masks = get_phrase_masks(h_phrases, h_sent_tokens) if h_phrases else [[]]
 
         # output['p_phrase_idx'] = [(_.start, _.end) for _ in p_phrases]
         # output['h_phrase_idx'] = [(_.start, _.end) for _ in h_phrases]
