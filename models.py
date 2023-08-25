@@ -134,6 +134,8 @@ class EPRModel(nn.Module):
 
         self.mlp = MLP(self.input_dim)
 
+        self.softmax = nn.Softmax(dim=-1)
+
         self.empty_tokens = EmptyToken(2, self.input_dim, device=device)
 
         if device:
@@ -143,7 +145,6 @@ class EPRModel(nn.Module):
         return self.induce_sentence_label(ex)
 
     def predict_phrasal_label(self, ex: dict):
-        print(f"ex: {ex}")
         p_phrase_tokens = ex["p_phrase_tokens"]
         p_sent_tokens = ex["p_sent_tokens"]
         p_masks = ex["p_masks"]
@@ -193,7 +194,7 @@ class EPRModel(nn.Module):
             # unaligned premise phrases
             if p not in alignment[:, 0]:
                 pr_phrases = self.mlp(embeddings_p[p], embedding_h_empty)
-                phrasal_probs[p, None] = pr_phrases
+                phrasal_probs[p, None] = self.softmax(pr_phrases)
 
         for h in arange(num_h_phrases):
             # unaligned hypothesis phrases
@@ -202,11 +203,11 @@ class EPRModel(nn.Module):
                     embedding_p_empty,
                     embeddings_h[h],
                 )
-                phrasal_probs[None, h] = pr_phrases
+                phrasal_probs[None, h] = self.softmax(pr_phrases)
 
         for p, h in alignment:
             pr_phrases = self.mlp(embeddings_p[p], embeddings_h[h])
-            phrasal_probs[p.item(), h.item()] = pr_phrases
+            phrasal_probs[p.item(), h.item()] = self.softmax(pr_phrases)
 
         return phrasal_probs, local_embeddings_p, local_embeddings_h
 

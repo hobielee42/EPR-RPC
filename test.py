@@ -3,6 +3,7 @@ import pickle
 import torch
 from datasets import Dataset
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 from models import EPRModel, EmptyToken
 from train import example_to_device
 
@@ -54,17 +55,24 @@ if __name__ == "__main__":
 
     ds: Dataset = tokens.add_column("alignment", alignments)
 
-    mode = "concat"
+    mode = "local"
 
     ds_torch = ds.with_format("torch")
     dataloader = DataLoader(ds_torch)
 
-    ex = example_to_device(ds_torch[0], device)
+    none_ex=[]
+    for i, ex in enumerate(tqdm(ds_torch)):
+        if ex is None:
+            none_ex.append(i)
+
+    print(none_ex)
+    # ex = example_to_device(ds_torch[0], device)
+    # print(ex)
 
     # empty_tokens = torch.nn.Embedding(2, 768).to(device)
     # empty_token_indices = [tensor(0).to(device), tensor(1).to(device)]
 
-    empty_tokens = EmptyToken(2, 768, device=device)
+    # empty_tokens = EmptyToken(2, 768, device=device)
 
     # sbert = SBert().to(device)
     # mlp = MLP(768).to(device)
@@ -82,7 +90,9 @@ if __name__ == "__main__":
     # p=local_ps[1]
     # h=local_hs[2]
 
-    epr = EPRModel(mode, device=device)
+    # epr = EPRModel(mode, device=device)
+    # epr.eval()
 
-    print(epr.empty_tokens[0, 1])
-    output = epr(ex)
+    # print(epr.empty_tokens[0, 1])
+    # with torch.no_grad():
+    #     output = epr(ex)

@@ -93,6 +93,31 @@ def load_checkpoint(path, mode):
     )
 
 
+def example_to_device(ex: dict, device: torch.device):
+    ex["idx"] = ex["idx"].to(device)
+    ex["p_phrase_tokens"]["input_ids"] = ex["p_phrase_tokens"]["input_ids"].to(device)
+    ex["p_phrase_tokens"]["attention_mask"] = ex["p_phrase_tokens"][
+        "attention_mask"
+    ].to(device)
+    ex["h_phrase_tokens"]["input_ids"] = ex["h_phrase_tokens"]["input_ids"].to(device)
+    ex["h_phrase_tokens"]["attention_mask"] = ex["h_phrase_tokens"][
+        "attention_mask"
+    ].to(device)
+    ex["p_sent_tokens"]["input_ids"] = ex["p_sent_tokens"]["input_ids"].to(device)
+    ex["p_sent_tokens"]["attention_mask"] = ex["p_sent_tokens"]["attention_mask"].to(
+        device
+    )
+    ex["h_sent_tokens"]["input_ids"] = ex["h_sent_tokens"]["input_ids"].to(device)
+    ex["h_sent_tokens"]["attention_mask"] = ex["h_sent_tokens"]["attention_mask"].to(
+        device
+    )
+    ex["p_masks"] = ex["p_masks"].to(device)
+    ex["h_masks"] = ex["h_masks"].to(device)
+    ex["label"] = ex["label"].to(device)
+
+    return ex
+
+
 def train_epoch(
     model: EPRModel,
     train_dl: DataLoader,
@@ -178,28 +203,3 @@ if __name__ == "__main__":
         model, optimizer, scheduler, epoch, track_acc = load_checkpoint(
             data_config["snli"]["model_path"], mode
         )
-
-
-def example_to_device(ex: dict, device: torch.device):
-    ex["idx"] = ex["idx"].to(device)
-    ex["p_phrase_tokens"]["input_ids"] = ex["p_phrase_tokens"]["input_ids"].to(device)
-    ex["p_phrase_tokens"]["attention_mask"] = ex["p_phrase_tokens"][
-        "attention_mask"
-    ].to(device)
-    ex["h_phrase_tokens"]["input_ids"] = ex["h_phrase_tokens"]["input_ids"].to(device)
-    ex["h_phrase_tokens"]["attention_mask"] = ex["h_phrase_tokens"][
-        "attention_mask"
-    ].to(device)
-    ex["p_sent_tokens"]["input_ids"] = ex["p_sent_tokens"]["input_ids"].to(device)
-    ex["p_sent_tokens"]["attention_mask"] = ex["p_sent_tokens"]["attention_mask"].to(
-        device
-    )
-    ex["h_sent_tokens"]["input_ids"] = ex["h_sent_tokens"]["input_ids"].to(device)
-    ex["h_sent_tokens"]["attention_mask"] = ex["h_sent_tokens"]["attention_mask"].to(
-        device
-    )
-    ex["p_masks"] = ex["p_masks"].to(device)
-    ex["h_masks"] = ex["h_masks"].to(device)
-    ex["label"] = ex["label"].to(device)
-
-    return ex
