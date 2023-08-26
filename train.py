@@ -166,7 +166,8 @@ def train_epoch(
     loss_fn = NLLLoss()
     batch_loss = tensor(0.0, device=device)
     epoch_loss = tensor(0.0, device=device)
-    hit_count = 0
+    epoch_hit_count = 0
+    batch_hit_count = 0
     num_batches = len_epoch // batch_size
     pbar = tqdm(iter(train_dl), total=len_epoch)
     for i, ex in enumerate(pbar):
@@ -179,7 +180,9 @@ def train_epoch(
         batch_loss += loss
         epoch_loss += loss
 
-        hit_count += int(torch.argmax(pred, dim=-1) == label)
+        hit = torch.argmax(pred, dim=-1) == label
+        batch_hit_count += int(hit)
+        epoch_hit_count += int(hit)
 
         # end of batch
         if (i + 1) % batch_size == 0 or i >= len_epoch:
@@ -192,11 +195,12 @@ def train_epoch(
             scheduler.step()
             optimizer.zero_grad()
             pbar.set_description(
-                f"Batch {i_batch}/{num_batches}; Training loss: {batch_loss:.4f}; Training accuracy: {(hit_count/(i+1)):.4f}"
+                f"Batch {i_batch}/{num_batches}; Loss: {batch_loss:.4f}; Accuracy: {(batch_hit_count/this_batch_size):.4f}"
             )
+            batch_hit_count = 0
             batch_loss = 0
 
-    return hit_count / len_epoch
+    return epoch_hit_count / len_epoch
 
 
 def evaluation(model: EPRModel, test_dl: DataLoader):
