@@ -205,18 +205,25 @@ class EPRModel(nn.Module):
 
     def induce_sentence_label(self, ex: dict):
         phrasal_probs, _, _ = self.predict_phrasal_label(ex)
+        device = _.device
         phrasal_probs_without_unaligned = {
             key: value for key, value in phrasal_probs.items() if None not in key
         }
         # phrase_pairs = tuple(phrasal_probs.keys())
 
         phrasal_probs_values = torch.stack(list(phrasal_probs.values()))
-        phrasal_probs_values_without_unaligned = torch.stack(
-            list(phrasal_probs_without_unaligned.values())
+        phrasal_probs_values_without_unaligned = (
+            torch.stack(list(phrasal_probs_without_unaligned.values()))
+            if list(phrasal_probs_without_unaligned.values()) != []
+            else None
         )
 
         sent_score_E = get_sent_score_E(phrasal_probs_values[:, 0])
-        sent_score_C = get_sent_score_C(phrasal_probs_values_without_unaligned[:, 1])
+        sent_score_C = (
+            get_sent_score_C(phrasal_probs_values_without_unaligned[:, 1])
+            if phrasal_probs_values_without_unaligned is not None
+            else tensor(0, device=device)
+        )
         sent_score_N = get_sent_score_N(phrasal_probs_values[:, 2], sent_score_C)
 
         sent_scores = torch.stack((sent_score_E, sent_score_C, sent_score_N))
