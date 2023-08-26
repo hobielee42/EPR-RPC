@@ -1,13 +1,8 @@
-import pickle
-
 import torch
-from datasets import Dataset
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-from transformers import PreTrainedTokenizer, AutoTokenizer
 
-from models import EPRModel, EmptyToken
-from train import example_to_device
+
+from models import EPRModel, EmptyToken, SBert
+
 
 device = torch.device(
     "cuda"
@@ -48,56 +43,56 @@ data_config = {
         },
     },
 }
+ds_config = {
+    "snli": {
+        "path": {
+            "train": "data/datasets/snli_1.0/snli_1.0_train.jsonl",
+            "val": "data/datasets/snli_1.0/snli_1.0_dev.jsonl",
+            "test": "data/datasets/snli_1.0/snli_1.0_test.jsonl",
+        },
+    },
+    "mnli": {
+        "path": {
+            "train": "data/datasets/multinli_1.0/multinli_1.0_train.jsonl",
+            "val": "data/datasets/multinli_1.0/multinli_1.0_dev_mismatched.jsonl",
+            "test": "data/datasets/multinli_1.0/multinli_1.0_dev_matched.jsonl",
+        },
+    },
+}
+
 
 if __name__ == "__main__":
-    with open(data_config["snli"]["train"]["tokens"], "rb") as f:
-        tokens: Dataset = pickle.load(f)
-    with open(data_config["snli"]["train"]["alignments"], "rb") as f:
-        alignments = pickle.load(f)
+    # with open(data_config["snli"]["train"]["tokens"], "rb") as f:
+    #     tokens: Dataset = pickle.load(f)
+    # with open(data_config["snli"]["train"]["alignments"], "rb") as f:
+    #     alignments = pickle.load(f)
 
-    ds: Dataset = tokens.add_column("alignment", alignments)
+    # labels = ["entailment", "contradiction", "neutral"]
 
-    mode = "local"
+    # ds: Dataset = tokens.add_column("alignment", alignments).with_format("torch")
 
-    ds_torch = ds.with_format("torch")
-    dataloader = DataLoader(ds_torch)
+    # mode = "local"
 
-    none_ex = []
-    # for i, ex in enumerate(tqdm(iter(dataloader))):
-    #     if ex is None:
-    #         none_ex.append(i)
+    # ex = deepcopy(ds[0])
+    # ex["h_phrases_idx"] = []
+    # ex["h_phrase_tokens"] = {"input_ids": [[]], "attention_mask": [[]]}
+    # ex["h_masks"] = [[]]
+    # ds_ = Dataset.from_list([ex]).with_format("torch")
+    # dl = DataLoader(ds_)
 
-    # print(none_ex)
+    sbert = SBert()
 
-    corrupted_ex = ds_torch[122105]
-
-    # ex = example_to_device(ds_torch[0], device)
-    # print(ex)
-
-    # empty_tokens = torch.nn.Embedding(2, 768).to(device)
-    # empty_token_indices = [tensor(0).to(device), tensor(1).to(device)]
-
-    # empty_tokens = EmptyToken(2, 768, device=device)
-
-    # sbert = SBert().to(device)
-    # mlp = MLP(768).to(device)
-
-    # local_ps = sbert(
-    #     ex["p_phrase_tokens"]["input_ids"].to(device),
-    #     ex["p_phrase_tokens"]["attention_mask"].to(device),
-    # )
-
-    # local_hs = sbert(
-    # ex["h_phrase_tokens"]["input_ids"].to(device),
-    # ex["h_phrase_tokens"]["attention_mask"].to(device),
-    # )
-
-    # p=local_ps[1]
-    # h=local_hs[2]
-
-    # epr = EPRModel(mode, device=device)
-    # epr.eval()
-
-    # print(epr.empty_tokens[0, 1])
-    # with torch.no_grad():
-    #     output = epr(ex)
+    empty_phrase_tokens = {
+        "input_ids": torch.empty((0, 1), dtype=torch.int),
+        "attention_mask": torch.empty((0, 1), dtype=torch.int),
+    }
+    empty_phrase_embedding = sbert(
+        empty_phrase_tokens["input_ids"], empty_phrase_tokens["attention_mask"]
+    )
+    num_sent_tokens=10
+    sent_tokens = {
+        "input_ids": torch.randint(high=1000, size=(1, num_sent_tokens)),
+        "attention_mask": torch.randint(high=1000, size=(1, num_sent_tokens)),
+    }
+    empty_masks = torch.empty((0, num_sent_tokens), dtype=torch.int)
+    empty_sent_embedding = sbert(sent_tokens["input_ids"], empty_masks)

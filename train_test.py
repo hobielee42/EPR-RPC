@@ -239,7 +239,7 @@ if __name__ == "__main__":
             data_config["snli"]["model_path"], mode
         )
 
-    train_epoch(model, train_dl, optimizer, scheduler)
+    # train_epoch(model, train_dl, optimizer, scheduler)
 
     # for epoch in range(epoch_start, num_epochs):
     #     train_acc = train_epoch(model, train_dl, optimizer, scheduler)

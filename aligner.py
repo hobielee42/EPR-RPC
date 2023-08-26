@@ -48,10 +48,10 @@ class Aligner:
             [
                 p_phrase_tokens,
                 p_sent_tokens,
-                p_masks,
+                p_masks != [[]],
                 h_phrase_tokens,
                 h_sent_tokens,
-                h_masks,
+                h_masks != [[]],
             ]
         ):
             self.model.eval()

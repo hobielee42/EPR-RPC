@@ -86,26 +86,67 @@ def load_checkpoint(path, mode):
 
 
 def example_to_device(ex: dict, device: torch.device):
-    ex["idx"] = ex["idx"].to(device)
-    ex["p_phrase_tokens"]["input_ids"] = ex["p_phrase_tokens"]["input_ids"].to(device)
-    ex["p_phrase_tokens"]["attention_mask"] = ex["p_phrase_tokens"][
-        "attention_mask"
-    ].to(device)
-    ex["h_phrase_tokens"]["input_ids"] = ex["h_phrase_tokens"]["input_ids"].to(device)
-    ex["h_phrase_tokens"]["attention_mask"] = ex["h_phrase_tokens"][
-        "attention_mask"
-    ].to(device)
-    ex["p_sent_tokens"]["input_ids"] = ex["p_sent_tokens"]["input_ids"].to(device)
-    ex["p_sent_tokens"]["attention_mask"] = ex["p_sent_tokens"]["attention_mask"].to(
-        device
+    ex["idx"] = ex["idx"].squeeze(0).to(device)
+    ex["p_phrases_idx"] = (
+        ex["p_phrases_idx"].squeeze(0).to(device)
+        if ex["p_phrases_idx"] != []
+        else torch.empty((0, 2), dtype=torch.int, device=device)
     )
-    ex["h_sent_tokens"]["input_ids"] = ex["h_sent_tokens"]["input_ids"].to(device)
-    ex["h_sent_tokens"]["attention_mask"] = ex["h_sent_tokens"]["attention_mask"].to(
-        device
+    ex["h_phrases_idx"] = (
+        ex["h_phrases_idx"].squeeze(0).to(device)
+        if ex["h_phrases_idx"] != []
+        else torch.empty((0, 2), dtype=torch.int, device=device)
     )
-    ex["p_masks"] = ex["p_masks"].to(device)
-    ex["h_masks"] = ex["h_masks"].to(device)
-    ex["label"] = ex["label"].to(device)
+    ex["p_phrase_tokens"]["input_ids"] = (
+        (ex["p_phrase_tokens"]["input_ids"].squeeze(0).to(device))
+        if ex["p_phrase_tokens"]["input_ids"] != [[]]
+        else torch.empty((0, 1), dtype=torch.int, device=device)
+    )
+    ex["p_phrase_tokens"]["attention_mask"] = (
+        (ex["p_phrase_tokens"]["attention_mask"].squeeze(0).to(device))
+        if ex["p_phrase_tokens"]["attention_mask"] != [[]]
+        else torch.empty((0, 1), dtype=torch.int, device=device)
+    )
+    ex["h_phrase_tokens"]["input_ids"] = (
+        (ex["h_phrase_tokens"]["input_ids"].squeeze(0).to(device))
+        if ex["h_phrase_tokens"]["input_ids"] != [[]]
+        else torch.empty((0, 1), dtype=torch.int, device=device)
+    )
+    ex["h_phrase_tokens"]["attention_mask"] = (
+        (ex["h_phrase_tokens"]["attention_mask"].squeeze(0).to(device))
+        if ex["h_phrase_tokens"]["attention_mask"] != [[]]
+        else torch.empty((0, 1), dtype=torch.int, device=device)
+    )
+    ex["p_sent_tokens"]["input_ids"] = (
+        ex["p_sent_tokens"]["input_ids"].squeeze(0).to(device)
+    )
+    ex["p_sent_tokens"]["attention_mask"] = (
+        ex["p_sent_tokens"]["attention_mask"].squeeze(0).to(device)
+    )
+    ex["h_sent_tokens"]["input_ids"] = (
+        ex["h_sent_tokens"]["input_ids"].squeeze(0).to(device)
+    )
+    ex["h_sent_tokens"]["attention_mask"] = (
+        ex["h_sent_tokens"]["attention_mask"].squeeze(0).to(device)
+    )
+    num_sent_tokens_p = len(ex["p_sent_tokens"]["attention_mask"])
+    num_sent_tokens_h = len(ex["h_sent_tokens"]["attention_mask"])
+    ex["p_masks"] = (
+        ex["p_masks"].squeeze(0).to(device)
+        if ex["p_masks"] != [[]]
+        else torch.empty((0, num_sent_tokens_p), dtype=torch.int, device=device)
+    )
+    ex["h_masks"] = (
+        ex["h_masks"].squeeze(0).to(device)
+        if ex["h_masks"] != [[]]
+        else torch.empty((0, num_sent_tokens_h), dtype=torch.int, device=device)
+    )
+    ex["label"] = ex["label"].squeeze(0).to(device)
+    ex["alignment"] = (
+        ex["alignment"].squeeze(0).to(device)
+        if ex["alignment"] != []
+        else torch.empty((0, 2), dtype=torch.int, device=device)
+    )
 
     return ex
 

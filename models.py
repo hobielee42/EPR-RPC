@@ -153,14 +153,6 @@ class EPRModel(nn.Module):
         h_masks = ex["h_masks"]
         alignment: Tensor = ex["alignment"]
 
-        # assert empty_tokens.embedding_dim == self.input_dim
-        assert all(
-            [
-                p_masks.size(dim=0),
-                h_masks.size(dim=0),
-            ]
-        )
-
         num_p_phrases = len(p_masks)
         num_h_phrases = len(h_masks)
 
