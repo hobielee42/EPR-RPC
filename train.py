@@ -155,7 +155,6 @@ def example_to_device(ex: dict, device: torch.device):
     return ex
 
 
-
 def train_epoch(
     model: EPRModel,
     train_dl: DataLoader,
@@ -179,7 +178,10 @@ def train_epoch(
         ex = example_to_device(ex, device)
         label: Tensor = ex["label"]
 
-        pred: Tensor = model(ex)
+        try:
+            pred: Tensor = model(ex)
+        except:
+            continue
 
         loss: Tensor = loss_fn(torch.log(pred.unsqueeze(0)), label.unsqueeze(0))
         batch_loss += loss
