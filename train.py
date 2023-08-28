@@ -168,8 +168,7 @@ def train_epoch(
     print(model.empty_tokens.training)
     len_epoch = len(train_dl)
     loss_fn = NLLLoss()
-    batch_loss = tensor(0.0, device=device)
-    epoch_loss = tensor(0.0, device=device)
+    batch_loss = 0
     epoch_hit_count = 0
     batch_hit_count = 0
     num_batches = len_epoch // batch_size
@@ -185,7 +184,6 @@ def train_epoch(
 
         loss: Tensor = loss_fn(torch.log(pred.unsqueeze(0)), label.unsqueeze(0))
         batch_loss += loss
-        epoch_loss += loss
 
         hit = torch.argmax(pred, dim=-1) == label
         batch_hit_count += int(hit)
