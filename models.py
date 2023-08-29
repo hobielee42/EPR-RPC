@@ -5,6 +5,8 @@ from numpy import arange
 from torch import nn, Tensor, tensor
 from transformers import AutoModel, PreTrainedModel
 
+import config
+
 
 def mean_pooling(token_embeddings: Tensor, masks: Tensor) -> Tensor:
     input_mask_expanded = masks.unsqueeze(-1).expand(token_embeddings.size()).float()
@@ -134,8 +136,6 @@ class EPRModel(nn.Module):
 
         self.mlp = MLP(self.input_dim)
 
-        self.softmax = nn.Softmax(dim=-1)
-
         self.empty_tokens = EmptyToken(2, self.input_dim, device=device)
 
         if device:
@@ -186,7 +186,7 @@ class EPRModel(nn.Module):
             # unaligned premise phrases
             if p not in alignment[:, 0]:
                 pr_phrases = self.mlp(embeddings_p[p], embedding_h_empty)
-                phrasal_probs[p, None] = self.softmax(pr_phrases)
+                phrasal_probs[p, None] = torch.softmax(pr_phrases, -1)
 
         for h in arange(num_h_phrases):
             # unaligned hypothesis phrases
@@ -195,17 +195,17 @@ class EPRModel(nn.Module):
                     embedding_p_empty,
                     embeddings_h[h],
                 )
-                phrasal_probs[None, h] = self.softmax(pr_phrases)
+                phrasal_probs[None, h] = torch.softmax(pr_phrases, -1)
 
         for p, h in alignment:
             pr_phrases = self.mlp(embeddings_p[p], embeddings_h[h])
-            phrasal_probs[p.item(), h.item()] = self.softmax(pr_phrases)
+            phrasal_probs[p.item(), h.item()] = torch.softmax(pr_phrases, -1)
 
         return phrasal_probs, local_embeddings_p, local_embeddings_h
 
     def induce_sentence_label(self, ex: dict):
         phrasal_probs, _, _ = self.predict_phrasal_label(ex)
-        device = _.device
+        device = config.device
         phrasal_probs_without_unaligned = {
             key: value for key, value in phrasal_probs.items() if None not in key
         }

@@ -7,6 +7,7 @@ from datasets import Dataset
 from tqdm import tqdm
 
 from aligner import Aligner
+from config import dataset_config, device
 from preprocessor import Preprocessor
 
 
@@ -19,23 +20,6 @@ def get_args():
     return parser.parse_args()
 
 
-ds_config = {
-    "snli": {
-        "path": {
-            "train": "data/datasets/snli_1.0/snli_1.0_train.jsonl",
-            "val": "data/datasets/snli_1.0/snli_1.0_dev.jsonl",
-            "test": "data/datasets/snli_1.0/snli_1.0_test.jsonl",
-        },
-    },
-    "mnli": {
-        "path": {
-            "train": "data/datasets/multinli_1.0/multinli_1.0_train.jsonl",
-            "val": "data/datasets/multinli_1.0/multinli_1.0_dev_mismatched.jsonl",
-            "test": "data/datasets/multinli_1.0/multinli_1.0_dev_matched.jsonl",
-        },
-    },
-}
-
 if __name__ == "__main__":
     args = get_args()
     ds_name: str = args.dataset
@@ -45,23 +29,16 @@ if __name__ == "__main__":
         if _[1]
     ]
 
-    device = torch.device(
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
-        else "cpu"
-    )
     print(f"Device: {device}")
     preprocessor = Preprocessor()
     aligner = Aligner(device)
 
-    if ds_name not in ds_config:
+    if ds_name not in dataset_config:
         raise ValueError('Please enter either "snli" or "mnli" for dataset.')
     else:
         labels = ["entailment", "contradiction", "neutral"]
         for split in splits:
-            ds = Dataset.from_json(ds_config[ds_name]["path"][split])
+            ds = Dataset.from_json(dataset_config[ds_name]["path"][split])
             ds = ds.filter(lambda ex: ex["gold_label"] in labels)
             ds = ds.map(
                 preprocessor.process,

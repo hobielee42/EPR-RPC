@@ -5,6 +5,7 @@ nohup.out
 /data/datasets
 **.out
 data/model
+data/encodings
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

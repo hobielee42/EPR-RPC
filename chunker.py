@@ -9,7 +9,7 @@ class Chunker:
 
     def chunk(self, sent: str) -> list[Span]:
         # sent = sent.strip()
-        doc = self._nlp(sent)
+        doc = self.get_doc(sent)
 
         phrase_indices = []
         pps = []
@@ -59,3 +59,7 @@ class Chunker:
         # print("phrases:", phrases)
 
         return phrases
+
+    def get_doc(self, sent):
+        doc = self._nlp(sent)
+        return doc
