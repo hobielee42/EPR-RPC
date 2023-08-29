@@ -233,8 +233,8 @@ def evaluation(model, test_ds, annotations_set):
 
 
 if __name__ == "__main__":
-    # mode, dataset_name = get_args()
-    mode, dataset_name = "local", "snli"
+    mode, dataset_name = get_args()
+    # mode, dataset_name = "local", "snli"
 
     with open(data_config[dataset_name]["test"]["tokens"], "rb") as f:
         test_tokens: Dataset = pickle.load(f)
