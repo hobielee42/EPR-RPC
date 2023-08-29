@@ -145,13 +145,18 @@ class EPRModel(nn.Module):
         return self.induce_sentence_label(ex)
 
     def predict_phrasal_label(self, ex: dict):
+        device = config.device
         p_phrase_tokens = ex["p_phrase_tokens"]
         p_sent_tokens = ex["p_sent_tokens"]
         p_masks = ex["p_masks"]
         h_phrase_tokens = ex["h_phrase_tokens"]
         h_sent_tokens = ex["h_sent_tokens"]
         h_masks = ex["h_masks"]
-        alignment: Tensor = ex["alignment"]
+        alignment: Tensor = (
+            ex["alignment"]
+            if isinstance(ex["alignment"], Tensor) and ex["alignment"].dim() == 2
+            else torch.empty((0, 2), dtype=torch.int)
+        )
 
         num_p_phrases = len(p_masks)
         num_h_phrases = len(h_masks)

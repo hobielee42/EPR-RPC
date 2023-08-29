@@ -23,21 +23,23 @@ def get_args():
 
 
 def num_true_pos(retrieved: list, relevant: list):
-    return len(set(retrieved).difference(set(relevant)))
+    return len(set(retrieved).intersection(set(relevant)))
 
 
 def phrases2word_indices(substr, sentence):
     chunker = Chunker()
     doc = chunker.get_doc(sentence)
-    phrases = [
-        phrase.translate(str.maketrans("", "", string.punctuation)).strip()
-        for phrase in substr.split("\u2022")
-    ]
+    # print(f"doc: {doc}")
+    phrases = [phrase.strip() for phrase in substr.split("\u2022")]
+    # print(f"phrases: {phrases}")
     num_words = len(doc)
+    # print(f"num_words: {num_words}")
     indices = []
     for phrase in phrases:
+        # print(f"phrase: {phrase}")
         for i in range(num_words - 1):
-            for j in range(1, num_words):
+            for j in range(i + 1, num_words + 1):
+                # print(f"    doc[{i}:{j}]: {doc[i:j].text}")
                 if doc[i:j].text == phrase:
                     indices += list(range(i, j))
 
@@ -55,10 +57,13 @@ def get_phrases_from_model(model: EPRModel, ex: dict):
         "NP": [],
         "NH": [],
     }
+    dl = DataLoader([ex])
+    ex = next(iter(dl))
     ex = example_to_device(ex, device)
     p_phrases_idx = ex["p_phrases_idx"]
     h_phrases_idx = ex["h_phrases_idx"]
     phrase_probs, _, _ = model.predict_phrasal_label(ex)
+    # print(phrase_probs)
 
     for key in phrase_probs.keys():
         p, h = key
@@ -96,7 +101,7 @@ def get_phrases_from_annotation(annotation: dict, ex: dict):
     }
 
 
-def sentence_accuracy(model: EPRModel, test_dl: DataLoader):
+def get_sentence_accuracy(model: EPRModel, test_dl: DataLoader):
     model.eval()
     hit_count = 0
     len_test = len(test_dl)
@@ -127,8 +132,8 @@ def evaluation(model, test_ds, annotations_set):
         num_true_pos_NH, num_retrieved_NH, num_relevant_NH = 0, 0, 0
         num_true_pos_UH, num_retrieved_UH, num_relevant_UH = 0, 0, 0
 
-        for annotation in annotations:
-            id = annotation["snli_id"]
+        for annotation in tqdm(annotations):
+            id = int(annotation["snli_id"])
             ex = test_ds[id]
 
             model_result = get_phrases_from_model(model, ex)
@@ -226,10 +231,19 @@ def evaluation(model, test_ds, annotations_set):
     F_UP /= len(annotations_set)
     F_UH /= len(annotations_set)
 
-    geometric_mean = (F_E * F_C * F_N) ** (1 / 3)
-    arithmetic_mean = (F_E + F_C + F_N) / 3
+    geometric_mean = (F_E * F_C * F_N * F_UP * F_UH) ** (1 / 5)
+    arithmetic_mean = (F_E + F_C + F_N + F_UP + F_UH) / 5
 
-    return F_E, F_C, F_N, F_UP, F_UH, geometric_mean, arithmetic_mean
+    return (
+        get_sentence_accuracy(model, DataLoader(test_ds)),
+        F_E,
+        F_C,
+        F_N,
+        F_UP,
+        F_UH,
+        geometric_mean,
+        arithmetic_mean,
+    )
 
 
 if __name__ == "__main__":
@@ -252,8 +266,8 @@ if __name__ == "__main__":
 
     model, _, _, _, _ = load_checkpoint(dataset_name, mode, device)
 
-    F_E, F_C, F_N, F_UP, F_UH, geometric_mean, arithmetic_mean = evaluation(
+    acc, F_E, F_C, F_N, F_UP, F_UH, geometric_mean, arithmetic_mean = evaluation(
         model, test_ds, annotations_set
     )
 
-    print(F_E, F_C, F_N, F_UP, F_UH, geometric_mean, arithmetic_mean)
+    print(acc, F_E, F_C, F_N, F_UP, F_UH, geometric_mean, arithmetic_mean)

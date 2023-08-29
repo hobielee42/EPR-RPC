@@ -12,7 +12,7 @@ from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
 
 from config import data_config, device
-from evaluation import sentence_accuracy
+from evaluation import get_sentence_accuracy
 from models import EPRModel
 from util import example_to_device, save_checkpoint, load_checkpoint
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         train_acc = train_epoch(model, train_dl, optimizer, scheduler)
 
         with torch.no_grad():
-            test_acc = sentence_accuracy(model, test_dl)
+            test_acc = get_sentence_accuracy(model, test_dl)
 
             if test_acc > track_acc:
                 track_acc = test_acc

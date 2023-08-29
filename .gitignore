@@ -4,8 +4,10 @@ nohup.out
 *.sh
 /data/datasets
 **.out
+log/
 data/model
 data/encodings
+result/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
