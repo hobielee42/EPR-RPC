@@ -20,7 +20,7 @@ from util import example_to_device, save_checkpoint, load_checkpoint
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("local", "global", "concat"))
-    parser.add_argument("--dataset", default="snli")
+    parser.add_argument("--dataset", choices=("snli", "mnli"), default="snli")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument(
         "--continue", action="store_true", default=False, dest="continue_"
