@@ -23,13 +23,14 @@ def get_sent_score_C(phrasal_probs_C_without_unaligned: Tensor):
     return torch.max(phrasal_probs_C_without_unaligned)
 
 
-def get_sent_score_N(phrasal_probs_N: Tensor, sent_score_C: Tensor):
+def get_sent_score_N(phrasal_probs_N: Tensor, sent_score_C: Tensor) -> Tensor:
     return torch.max(phrasal_probs_N) * (1 - sent_score_C)
 
 
 class SBert(nn.Module):
     def __init__(
-        self, pretrained_model_name_or_path="sentence-transformers/all-mpnet-base-v2"
+        self,
+        pretrained_model_name_or_path: str = "sentence-transformers/all-mpnet-base-v2",
     ):
         super().__init__()
         self.model: PreTrainedModel = AutoModel.from_pretrained(
@@ -54,7 +55,7 @@ class SBert(nn.Module):
 
 
 class MLP(nn.Module):
-    def __init__(self, embed_dim, hidden_dim1=1024, hidden_dim2=256):
+    def __init__(self, embed_dim: int, hidden_dim1=1024, hidden_dim2=256):
         super().__init__()
         self.input_dim = embed_dim
         num_labels = 3
@@ -76,6 +77,10 @@ class MLP(nn.Module):
 
 
 class EmptyToken(torch.nn.Embedding):
+    """
+    A subclass of torch.nn.Embedding that supports integer indexing.
+    """
+
     def __init__(
         self,
         num_embeddings: int,
@@ -104,7 +109,7 @@ class EmptyToken(torch.nn.Embedding):
             dtype,
         )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Tensor:
         index = tensor(key, device=self.weight.device)
         return self(index)
 
@@ -145,7 +150,6 @@ class EPRModel(nn.Module):
         return self.induce_sentence_label(ex)
 
     def predict_phrasal_label(self, ex: dict):
-        device = config.device
         p_phrase_tokens = ex["p_phrase_tokens"]
         p_sent_tokens = ex["p_sent_tokens"]
         p_masks = ex["p_masks"]
@@ -162,10 +166,10 @@ class EPRModel(nn.Module):
         num_h_phrases = len(h_masks)
 
         # get embeddings
-        local_embeddings_p = self.local_sbert(
+        local_embeddings_p: Tensor = self.local_sbert(
             p_phrase_tokens["input_ids"], p_phrase_tokens["attention_mask"]
         )
-        local_embeddings_h = self.local_sbert(
+        local_embeddings_h: Tensor = self.local_sbert(
             h_phrase_tokens["input_ids"], h_phrase_tokens["attention_mask"]
         )
         global_embeddings_p = self.global_sbert(p_sent_tokens["input_ids"], p_masks)
@@ -187,12 +191,14 @@ class EPRModel(nn.Module):
         embedding_h_empty = self.empty_tokens[1]
 
         phrasal_probs = {}
+        p: int
         for p in arange(num_p_phrases):
             # unaligned premise phrases
             if p not in alignment[:, 0]:
                 pr_phrases = self.mlp(embeddings_p[p], embedding_h_empty)
                 phrasal_probs[p, None] = torch.softmax(pr_phrases, -1)
 
+        h: int
         for h in arange(num_h_phrases):
             # unaligned hypothesis phrases
             if h not in alignment[:, 1]:
@@ -232,11 +238,6 @@ class EPRModel(nn.Module):
         sent_score_N = get_sent_score_N(phrasal_probs_values[:, 2], sent_score_C)
 
         sent_scores = torch.stack((sent_score_E, sent_score_C, sent_score_N))
-        sent_probs = sent_scores / torch.sum(sent_scores)
+        sent_probs: Tensor = sent_scores / torch.sum(sent_scores)
 
         return sent_probs
-
-
-# class Explainer(nn.Module):
-#     def __init__(self):
-#         super().__init__()

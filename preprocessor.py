@@ -58,9 +58,9 @@ class Preprocessor:
             pretrained_tokenizer_name_or_path
         )
 
-    def process(self, ex: dict, idx=None):
-        premise = ex["sentence1"].strip()
-        hypothesis = ex["sentence2"].strip()
+    def process(self, ex: dict, idx: int = None):
+        premise: str = ex["sentence1"].strip()
+        hypothesis: str = ex["sentence2"].strip()
 
         p_phrases = self.chunker.chunk(premise)
         h_phrases = self.chunker.chunk(hypothesis)
@@ -68,8 +68,8 @@ class Preprocessor:
         p_phrases_text = [_.text for _ in p_phrases]
         h_phrases_text = [_.text for _ in h_phrases]
 
-        p_phrases_idx = [(_.start, _.end) for _ in p_phrases]
-        h_phrases_idx = [(_.start, _.end) for _ in h_phrases]
+        p_phrases_idx: list[tuple[int, int]] = [(_.start, _.end) for _ in p_phrases]
+        h_phrases_idx: list[tuple[int, int]] = [(_.start, _.end) for _ in h_phrases]
 
         p_phrase_tokens = (
             self.tokenizer(
@@ -117,16 +117,3 @@ class Preprocessor:
             "h_masks": h_masks,
             "label": label2id[ex["gold_label"]],
         }
-
-    # def process_dataset(self, dataset: Dataset):
-    #     dataloader = []
-    #     print(f"Preprocessing {len(dataset)} examples...")
-    #     pbar = tqdm(dataset)
-    #     for i, ex in enumerate(pbar):
-    #         dataloader.append(self.process(ex))
-    #         pbar.set_description(f"Preprocessing sample #{i}")
-    #     print(
-    #         f'{len(dataloader)} out of the total {len(dataset)} {"is" if len(dataloader) in [0,1] else "are"} preprocessed.'
-    #     )
-    #
-    #     return dataloader

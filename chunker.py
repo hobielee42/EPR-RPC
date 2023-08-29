@@ -4,7 +4,7 @@ from spacy.tokens.span import Span
 
 
 class Chunker:
-    def __init__(self, model_name="en_core_web_sm"):
+    def __init__(self, model_name: str = "en_core_web_sm"):
         self._nlp = spacy.load(model_name)
 
     def chunk(self, sent: str) -> list[Span]:
@@ -60,6 +60,6 @@ class Chunker:
 
         return phrases
 
-    def get_doc(self, sent):
+    def get_doc(self, sent: str):
         doc = self._nlp(sent)
         return doc

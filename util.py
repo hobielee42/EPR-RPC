@@ -1,6 +1,10 @@
 import torch
+from torch import device
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import StepLR
 
 from config import model_config
+from models import EPRModel
 
 
 def example_to_device(ex: dict, device: torch.device):
@@ -75,7 +79,15 @@ def example_to_device(ex: dict, device: torch.device):
     return ex
 
 
-def save_checkpoint(dataset_name, mode, model, optimizer, scheduler, epoch, acc):
+def save_checkpoint(
+    dataset_name: str,
+    mode: str,
+    model: EPRModel,
+    optimizer: Optimizer,
+    scheduler: StepLR,
+    epoch: int,
+    acc: float,
+):
     torch.save(
         {
             "model": model,
@@ -88,17 +100,17 @@ def save_checkpoint(dataset_name, mode, model, optimizer, scheduler, epoch, acc)
     )
 
 
-def load_checkpoint(dataset_name, mode, map_location=None):
+def load_checkpoint(dataset_name: str, mode: str, map_location: device = None):
     path = model_config[dataset_name][mode]
     checkpoint = (
         torch.load(path)
         if not map_location
         else torch.load(path, map_location=map_location)
     )
-    return (
-        checkpoint["model"],
-        checkpoint["optimizer"],
-        checkpoint["scheduler"],
-        checkpoint["epoch"],
-        checkpoint["accuracy"],
-    )
+    model: EPRModel = checkpoint["model"]
+    optimizer: Optimizer = checkpoint["optimizer"]
+    scheduler: StepLR = checkpoint["scheduler"]
+    start_epoch: int = checkpoint["epoch"]
+    acc: float = checkpoint["accuracy"]
+
+    return model, optimizer, scheduler, start_epoch, acc

@@ -14,7 +14,7 @@ from models import EPRModel
 from util import example_to_device, load_checkpoint
 
 
-def get_args():
+def get_args() -> tuple[str, str]:
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("local", "global", "concat"))
     parser.add_argument("--dataset", default="snli")
@@ -26,7 +26,7 @@ def num_true_pos(retrieved: list, relevant: list):
     return len(set(retrieved).intersection(set(relevant)))
 
 
-def phrases2word_indices(substr, sentence):
+def phrases2word_indices(substr: str, sentence: str):
     chunker = Chunker()
     doc = chunker.get_doc(sentence)
     # print(f"doc: {doc}")
@@ -119,8 +119,8 @@ def get_sentence_accuracy(model: EPRModel, test_dl: DataLoader):
     return hit_count / len_test
 
 
-def evaluation(model, test_ds, annotations_set):
-    F_E, F_C, F_N, F_UP, F_UH = 0, 0, 0, 0, 0
+def evaluation(model: EPRModel, test_ds: Dataset, annotations_set: list[Dataset]):
+    F_E, F_C, F_N, F_UP, F_UH = 0.0, 0.0, 0.0, 0.0, 0.0
 
     for annotations in annotations_set:
         num_true_pos_EP, num_retrieved_EP, num_relevant_EP = 0, 0, 0
@@ -231,7 +231,7 @@ def evaluation(model, test_ds, annotations_set):
     F_UP /= len(annotations_set)
     F_UH /= len(annotations_set)
 
-    geometric_mean = (F_E * F_C * F_N * F_UP * F_UH) ** (1 / 5)
+    geometric_mean: float = (F_E * F_C * F_N * F_UP * F_UH) ** (1 / 5)
     arithmetic_mean = (F_E + F_C + F_N + F_UP + F_UH) / 5
 
     return (

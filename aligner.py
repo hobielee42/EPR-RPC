@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from models import SBert
 
 
-def cosine_similarity_matrix(A: Tensor, B: Tensor):
+def cosine_similarity_matrix(A: Tensor, B: Tensor) -> Tensor:
     # Normalize the tensors
     A_normd = F.normalize(A, dim=1)
     B_normd = F.normalize(B, dim=1)
@@ -20,11 +20,11 @@ class Aligner:
     def __init__(
         self,
         device: torch.device,
-        model: nn.Module = SBert(),
-        lambda_=0.6,
+        pretrained_model_name_or_path: str = "sentence-transformers/all-mpnet-base-v2",
+        lambda_: float = 0.6,
     ):
         self.device = device
-        self.model = model.to(device)
+        self.model = SBert(pretrained_model_name_or_path)
         self.lambda_ = lambda_
 
     def compute(self, ex: dict):
@@ -97,6 +97,7 @@ class Aligner:
             # Initialize a list to store the results
 
             # Iterate over each row and check if the maximum element is also the maximum in its column
+            p: int
             for p, h in enumerate(max_row_indices):
                 if p == max_col_indices[h]:
                     pairs.append((p, int(h)))
